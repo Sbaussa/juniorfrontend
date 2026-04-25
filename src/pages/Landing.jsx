@@ -46,13 +46,46 @@ const waProductUrl = (p) =>
   `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Me interesa: *${p.nombre}* — $${Number(p.precio).toLocaleString("es-CO")}`)}`;
 const getCat = (val) => CATEGORIAS.find((c) => c.value === val) || CATEGORIAS[4];
 
-// ─── Helper: force-play video (needed for iOS Safari) ───────────
-function tryPlay(videoRef) {
-  if (!videoRef?.current) return;
-  const v = videoRef.current;
-  v.muted = true;
-  const p = v.play();
-  if (p !== undefined) p.catch(() => {});
+// ─────────────────────────────────────────────────────────────────
+//  ▶ forcePlay — solución robusta para autoplay en iOS y Android
+//  Los videos no tienen audio, así que muted siempre va true.
+// ─────────────────────────────────────────────────────────────────
+function forcePlay(el) {
+  if (!el) return;
+  // 1. Forzar muted como propiedad DOM (workaround bug de React con muted)
+  el.muted = true;
+  // 2. Atributos requeridos por iOS Safari
+  el.setAttribute("playsinline", "");
+  el.setAttribute("webkit-playsinline", "");
+  // 3. Intentar play()
+  const p = el.play();
+  if (p && typeof p.catch === "function") p.catch(() => {});
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Hook para autoplay robusto en un ref de video
+// ─────────────────────────────────────────────────────────────────
+function useAutoplay(ref) {
+  useEffect(() => {
+    const el = ref?.current;
+    if (!el) return;
+
+    forcePlay(el);
+
+    // Reintentar cuando el browser tenga datos suficientes
+    const onCanPlay = () => forcePlay(el);
+    const onLoaded  = () => forcePlay(el);
+
+    el.addEventListener("canplay",       onCanPlay, { once: true });
+    el.addEventListener("loadeddata",    onLoaded,  { once: true });
+    el.addEventListener("loadedmetadata",onLoaded,  { once: true });
+
+    return () => {
+      el.removeEventListener("canplay",        onCanPlay);
+      el.removeEventListener("loadeddata",     onLoaded);
+      el.removeEventListener("loadedmetadata", onLoaded);
+    };
+  }, []);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -326,22 +359,16 @@ function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Close menu on resize to desktop
   useEffect(() => {
     const fn = () => { if (window.innerWidth > 768) setMobileOpen(false); };
     window.addEventListener("resize", fn);
     return () => window.removeEventListener("resize", fn);
   }, []);
-
-  // Prevent body scroll when menu open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
-
   const close = () => setMobileOpen(false);
-
   return (
     <>
       <nav className="navbar">
@@ -349,8 +376,6 @@ function Navbar() {
           <Link to="/" className="navbar-logo" onClick={close}>
             <img src={LOGO_SRC} alt="Junior Technical Service" className="navbar-logo-img" />
           </Link>
-
-          {/* Desktop links */}
           <div className="navbar-links-desktop">
             <a href="#servicios" className="nav-link">Servicios</a>
             <a href="#cotizar"   className="nav-link">Cotizar</a>
@@ -369,78 +394,39 @@ function Navbar() {
               </div>
             )}
           </div>
-
-          {/* Hamburger */}
-          <button
-            className={`navbar-hamburger ${mobileOpen ? "is-open" : ""}`}
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Menú"
-          >
+          <button className={`navbar-hamburger ${mobileOpen ? "is-open" : ""}`} onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menú">
             <span /><span /><span />
           </button>
         </div>
       </nav>
-
-      {/* Mobile drawer overlay */}
       {mobileOpen && <div className="mobile-overlay" onClick={close} />}
-
-      {/* Mobile drawer */}
       <div className={`mobile-drawer ${mobileOpen ? "drawer-open" : ""}`}>
         <div className="drawer-header">
           <img src={LOGO_SRC} alt="Logo" className="drawer-logo" />
           <button className="drawer-close" onClick={close}><X size={20} /></button>
         </div>
-
         <nav className="drawer-nav">
-          <a href="#servicios" className="drawer-link" onClick={close}>
-            <Wrench size={16} /> Servicios
-          </a>
-          <a href="#cotizar" className="drawer-link" onClick={close}>
-            <Zap size={16} /> Cotizar
-          </a>
-          <a href="#tienda" className="drawer-link" onClick={close}>
-            <ShoppingBag size={16} /> Tienda
-          </a>
-          <a href="#buscar" className="drawer-link" onClick={close}>
-            <Search size={16} /> Buscar Reparación
-          </a>
+          <a href="#servicios" className="drawer-link" onClick={close}><Wrench size={16} /> Servicios</a>
+          <a href="#cotizar"   className="drawer-link" onClick={close}><Zap size={16} /> Cotizar</a>
+          <a href="#tienda"    className="drawer-link" onClick={close}><ShoppingBag size={16} /> Tienda</a>
+          <a href="#buscar"    className="drawer-link" onClick={close}><Search size={16} /> Buscar Reparación</a>
         </nav>
-
         <div className="drawer-divider" />
-
         {user ? (
           <div className="drawer-auth">
-            <div className="drawer-user">
-              <div className="drawer-avatar"><User size={18} /></div>
-              <span>{user.nombre}</span>
-            </div>
-            {user.rol === "admin" && (
-              <Link to="/admin" className="drawer-btn drawer-btn-secondary" onClick={close}>
-                <LayoutDashboard size={15} /> Panel Admin
-              </Link>
-            )}
-            <Link to="/dashboard" className="drawer-btn drawer-btn-ghost" onClick={close}>
-              Dashboard
-            </Link>
-            <button className="drawer-btn drawer-btn-danger" onClick={() => { logout(); navigate("/"); close(); }}>
-              <LogOut size={15} /> Cerrar Sesión
-            </button>
+            <div className="drawer-user"><div className="drawer-avatar"><User size={18} /></div><span>{user.nombre}</span></div>
+            {user.rol === "admin" && <Link to="/admin" className="drawer-btn drawer-btn-secondary" onClick={close}><LayoutDashboard size={15} /> Panel Admin</Link>}
+            <Link to="/dashboard" className="drawer-btn drawer-btn-ghost" onClick={close}>Dashboard</Link>
+            <button className="drawer-btn drawer-btn-danger" onClick={() => { logout(); navigate("/"); close(); }}><LogOut size={15} /> Cerrar Sesión</button>
           </div>
         ) : (
           <div className="drawer-auth">
-            <Link to="/login" className="drawer-btn drawer-btn-ghost" onClick={close}>
-              Ingresar
-            </Link>
-            <Link to="/registro" className="drawer-btn drawer-btn-primary" onClick={close}>
-              <Zap size={15} /> Crear Cuenta Gratis
-            </Link>
+            <Link to="/login"    className="drawer-btn drawer-btn-ghost"    onClick={close}>Ingresar</Link>
+            <Link to="/registro" className="drawer-btn drawer-btn-primary"  onClick={close}><Zap size={15} /> Crear Cuenta Gratis</Link>
           </div>
         )}
-
         <div className="drawer-wa">
-          <a href={WA_URL} target="_blank" rel="noreferrer" className="drawer-wa-btn">
-            <WaIcon size={18} /> Contactar por WhatsApp
-          </a>
+          <a href={WA_URL} target="_blank" rel="noreferrer" className="drawer-wa-btn"><WaIcon size={18} /> Contactar por WhatsApp</a>
         </div>
       </div>
     </>
@@ -456,9 +442,7 @@ function Footer() {
       <div className="footer-container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <div className="footer-logo">
-              <img src={LOGO_SRC} alt="Junior Technical Service" className="footer-logo-img" />
-            </div>
+            <div className="footer-logo"><img src={LOGO_SRC} alt="Junior Technical Service" className="footer-logo-img" /></div>
             <p className="footer-desc">Especialistas en reparación de consolas, computadores y celulares. Servicio técnico profesional con garantía.</p>
           </div>
           <div className="footer-section">
@@ -498,64 +482,65 @@ function Footer() {
 //  ══ LANDING ══
 // ─────────────────────────────────────────────────────────────────
 export default function Landing() {
-  const [searchCode, setSearchCode]     = useState("");
-  const [searchResult, setSearchResult] = useState(null);
+  const [searchCode, setSearchCode]       = useState("");
+  const [searchResult, setSearchResult]   = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError]   = useState("");
+  const [searchError, setSearchError]     = useState("");
   const [currentSection, setCurrentSection] = useState(0);
-  const [isAdmin, setIsAdmin]           = useState(false);
+  const [isAdmin, setIsAdmin]             = useState(false);
+  const [introDone, setIntroDone]         = useState(false);
+  const [introFading, setIntroFading]     = useState(false);
 
-  const [introDone, setIntroDone]   = useState(false);
-  const [introFading, setIntroFading] = useState(false);
-  const introVideoRef               = useRef(null);
-  const scrollVideoRef              = useRef(null);
-  const heroVideoRef                = useRef(null);
-  const heroSectionRef              = useRef(null);
-  const containerRef                = useRef(null);
+  const introVideoRef   = useRef(null);
+  const heroVideoRef    = useRef(null);
+  const scrollVideoRef  = useRef(null);
+  const heroSectionRef  = useRef(null);
+  const containerRef    = useRef(null);
 
   useEffect(() => {
     try { const u = JSON.parse(localStorage.getItem("user") || "{}"); setIsAdmin(u.rol === "admin" || u.role === "admin"); } catch {}
   }, []);
 
-  // ── MOBILE VIDEO AUTOPLAY FIX ────────────────────────────────
-  // iOS Safari requires a user gesture OR that you call .play() inside
-  // a touchstart/click event. We attach a one-time listener on the
-  // document so the very first touch triggers all videos.
+  // ── Autoplay robusto para los 3 videos ────────────────────────
+  // iOS Safari: muted + playsinline + autoplay como atributos HTML
+  // ya están en JSX. Este efecto los fuerza también como propiedades
+  // DOM y llama play() en cuanto el browser tenga datos.
+  useAutoplay(introVideoRef);
+  useAutoplay(heroVideoRef);
+  useAutoplay(scrollVideoRef);
+
+  // ── Fallback primer toque (iOS bloquea si el video no inició) ──
   useEffect(() => {
-    let unlocked = false;
+    let done = false;
     const unlock = () => {
-      if (unlocked) return;
-      unlocked = true;
-      tryPlay(introVideoRef);
-      tryPlay(heroVideoRef);
-      tryPlay(scrollVideoRef);
+      if (done) return; done = true;
+      forcePlay(introVideoRef.current);
+      forcePlay(heroVideoRef.current);
+      forcePlay(scrollVideoRef.current);
     };
+    // touchstart: primer toque en iOS
     document.addEventListener("touchstart", unlock, { once: true, passive: true });
-    document.addEventListener("click",      unlock, { once: true });
+    // click: cualquier interacción
+    document.addEventListener("click", unlock, { once: true });
     return () => {
       document.removeEventListener("touchstart", unlock);
-      document.removeEventListener("click",      unlock);
+      document.removeEventListener("click", unlock);
     };
   }, []);
 
-  // ── Intro video: fade out when ended ────────────────────────
-  const handleIntroEnd = () => {
+  // ── Intro: fade out cuando termina ────────────────────────────
+  const handleIntroEnd = useCallback(() => {
     setIntroFading(true);
     setTimeout(() => setIntroDone(true), 700);
-  };
+  }, []);
 
-  // Fallback: skip intro after 6s if video doesn't load
+  // Fallback: skip intro si el video no carga en 6s
   useEffect(() => {
     const t = setTimeout(handleIntroEnd, 6000);
     return () => clearTimeout(t);
-  }, []);
+  }, [handleIntroEnd]);
 
-  // ── Background video: always playing ────────────────────────
-  useEffect(() => {
-    tryPlay(scrollVideoRef);
-  }, []);
-
-  // ── Dot nav ─────────────────────────────────────────────────
+  // ── Dot nav ───────────────────────────────────────────────────
   useEffect(() => {
     const el = containerRef.current; if (!el) return;
     const fn = () => { el.querySelectorAll(".snap-sec").forEach((s, i) => { const r = s.getBoundingClientRect(); if (r.top >= -80 && r.top < window.innerHeight * 0.5) setCurrentSection(i); }); };
@@ -577,9 +562,9 @@ export default function Landing() {
   const vVis  = sRefs.map((r) => useVisible(r));
 
   const SERVICES = [
-    { icon: <Gamepad2 size={38} />, title: "Consolas",    sub: "PlayStation · Xbox · Nintendo",    img: "/images/consola.jpg",  items: ["Joystick drift","No enciende","Sobrecalentamiento","Lector de discos","HDMI roto"] },
-    { icon: <Cpu size={38} />,      title: "Computadores", sub: "Laptops y PCs escritorio",          img: "/images/pc.jpg",       items: ["Pantalla rota","Virus / Malware","Upgrade SSD/RAM","Fuente de poder","Teclado/Touchpad"] },
-    { icon: <Smartphone size={38} />,title:"Celulares",    sub: "iPhone · Samsung · Xiaomi",         img: "/images/celular.jpg",  items: ["Pantalla rota","Batería dañada","Puerto de carga","Cámara","Sensor de huella"] },
+    { icon: <Gamepad2 size={38} />,   title: "Consolas",     sub: "PlayStation · Xbox · Nintendo", img: "/images/consola.jpg", items: ["Joystick drift","No enciende","Sobrecalentamiento","Lector de discos","HDMI roto"] },
+    { icon: <Cpu size={38} />,        title: "Computadores", sub: "Laptops y PCs escritorio",       img: "/images/pc.jpg",      items: ["Pantalla rota","Virus / Malware","Upgrade SSD/RAM","Fuente de poder","Teclado/Touchpad"] },
+    { icon: <Smartphone size={38} />, title: "Celulares",    sub: "iPhone · Samsung · Xiaomi",      img: "/images/celular.jpg", items: ["Pantalla rota","Batería dañada","Puerto de carga","Cámara","Sensor de huella"] },
   ];
 
   const STEPS = [
@@ -592,9 +577,15 @@ export default function Landing() {
   return (
     <div className="lnd-root">
 
-      {/* ── INTRO VIDEO ── */}
+      {/* ── INTRO VIDEO — pantalla completa limpia ── */}
       {!introDone && (
         <div className="intro-overlay" style={{ opacity: introFading ? 0 : 1 }}>
+          {/*
+            iOS Safari REQUIERE que el video tenga:
+              autoPlay + muted + playsInline  como atributos JSX
+            Android Chrome lo respeta también.
+            El hook useAutoplay() y forcePlay() aseguran la ejecución.
+          */}
           <video
             ref={introVideoRef}
             className="intro-video"
@@ -602,6 +593,7 @@ export default function Landing() {
             muted
             playsInline
             onEnded={handleIntroEnd}
+            onCanPlay={() => forcePlay(introVideoRef.current)}
           >
             <source src={INTRO_VIDEO_SRC} type="video/mp4" />
           </video>
@@ -610,7 +602,7 @@ export default function Landing() {
 
       <Navbar />
 
-      {/* ── SCROLL BG VIDEO ── */}
+      {/* ── FONDO FIJO — video en bucle para todas las secciones ── */}
       <video
         ref={scrollVideoRef}
         className="scroll-video-bg"
@@ -618,6 +610,7 @@ export default function Landing() {
         muted
         playsInline
         loop
+        onCanPlay={() => forcePlay(scrollVideoRef.current)}
       >
         <source src={SCROLL_VIDEO_SRC} type="video/mp4" />
       </video>
@@ -646,6 +639,7 @@ export default function Landing() {
             loop
             muted
             playsInline
+            onCanPlay={() => forcePlay(heroVideoRef.current)}
           >
             <source src={HERO_VIDEO_SRC} type="video/mp4" />
           </video>
@@ -801,28 +795,18 @@ export default function Landing() {
         </section>
 
         {/* ── FOOTER ── */}
-        <div className="footer-wrap">
-          <Footer />
-        </div>
+        <div className="footer-wrap"><Footer /></div>
 
       </div>
 
       <style>{`
         :root {
-          --ng: #39ff14;
-          --ng-glow: rgba(57,255,20,.25);
-          --ng-soft: rgba(57,255,20,.08);
-          --wa: #25D366;
-          --wa-dark: #128C7E;
-          --r: 16px;
+          --ng: #39ff14; --ng-glow: rgba(57,255,20,.25); --ng-soft: rgba(57,255,20,.08);
+          --wa: #25D366; --wa-dark: #128C7E; --r: 16px;
         }
 
-        /* ── INTRO OVERLAY ── */
-        .intro-overlay {
-          position: fixed; inset: 0; z-index: 99999;
-          background: #000; display: flex; align-items: center; justify-content: center;
-          transition: opacity .7s ease; pointer-events: all;
-        }
+        /* ── INTRO ── */
+        .intro-overlay { position: fixed; inset: 0; z-index: 99999; background: #000; display: flex; align-items: center; justify-content: center; transition: opacity .7s ease; pointer-events: all; }
         .intro-video { width: 100vw; height: 100vh; object-fit: cover; }
 
         /* ── Shell ── */
@@ -834,38 +818,26 @@ export default function Landing() {
         .sec-inner.vis { opacity: 1; transform: none; }
         .footer-wrap { scroll-snap-align: start; width: 100%; }
 
-        /* ── Scroll BG video ── */
+        /* ── Videos ── */
         .scroll-video-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; pointer-events: none; }
         .scroll-video-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.62); z-index: 0; pointer-events: none; }
-
-        /* ── Hero video ── */
         .hero-video-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }
         .hero-video-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,.45) 0%, rgba(0,0,0,.2) 50%, rgba(0,0,0,.65) 100%); z-index: 1; pointer-events: none; }
 
-        .srv-sec     { background: rgba(5,5,5,0.80); }
-        .proc-sec    { background: rgba(10,10,10,0.78); }
-        .cot-sec     { background: rgba(5,5,5,0.80); }
-        .productos-sec { background: rgba(8,8,8,0.82); }
-        .buscar-sec  { background: rgba(5,5,5,0.80); }
-        .cta-sec     { background: rgba(8,8,8,0.75); }
-        .hero-sec    { background: transparent; }
+        /* Sección backgrounds semi-transparentes */
+        .hero-sec { background: transparent; }
+        .srv-sec   { background: rgba(5,5,5,.80); }
+        .proc-sec  { background: rgba(10,10,10,.78); }
+        .cot-sec   { background: rgba(5,5,5,.80); }
+        .productos-sec { background: rgba(8,8,8,.82); }
+        .buscar-sec { background: rgba(5,5,5,.80); }
+        .cta-sec   { background: rgba(8,8,8,.75); }
 
-        /* ════════════════════════════════════════════
-           NAVBAR
-        ════════════════════════════════════════════ */
-        .navbar {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-          background: rgba(8,8,8,0.92); backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(57,255,20,.1);
-        }
-        .navbar-container {
-          max-width: 1200px; margin: 0 auto; padding: 0 24px;
-          height: 64px; display: flex; align-items: center; justify-content: space-between;
-        }
+        /* ── NAVBAR ── */
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(8,8,8,.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(57,255,20,.1); }
+        .navbar-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
         .navbar-logo { display: flex; align-items: center; text-decoration: none; }
         .navbar-logo-img { height: 44px; width: auto; object-fit: contain; filter: drop-shadow(0 0 8px rgba(57,255,20,.4)); }
-
-        /* Desktop links */
         .navbar-links-desktop { display: flex; align-items: center; gap: 4px; }
         .nav-link { color: #aaa; text-decoration: none; font-size: 14px; font-weight: 500; padding: 7px 14px; border-radius: 10px; transition: all .25s; }
         .nav-link:hover { color: var(--ng); background: var(--ng-soft); }
@@ -878,112 +850,44 @@ export default function Landing() {
         .btn-secondary { background: rgba(57,255,20,.12); color: var(--ng); border: 1px solid rgba(57,255,20,.3); }
         .btn-sm { padding: 7px 14px; font-size: 13px; }
 
-        /* ── HAMBURGER BUTTON ── */
-        .navbar-hamburger {
-          display: none;
-          flex-direction: column; justify-content: center; align-items: center;
-          gap: 5px; width: 42px; height: 42px;
-          background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
-          border-radius: 10px; cursor: pointer; padding: 0;
-          transition: all .3s; flex-shrink: 0;
-        }
+        /* ── HAMBURGER ── */
+        .navbar-hamburger { display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px; width: 42px; height: 42px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; cursor: pointer; padding: 0; transition: all .3s; flex-shrink: 0; }
         .navbar-hamburger:hover { border-color: var(--ng); background: var(--ng-soft); }
-        .navbar-hamburger span {
-          display: block; width: 20px; height: 2px;
-          background: #ddd; border-radius: 2px;
-          transition: all .35s cubic-bezier(.22,1,.36,1); transform-origin: center;
-        }
+        .navbar-hamburger span { display: block; width: 20px; height: 2px; background: #ddd; border-radius: 2px; transition: all .35s cubic-bezier(.22,1,.36,1); transform-origin: center; }
         .navbar-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); background: var(--ng); }
         .navbar-hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
         .navbar-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); background: var(--ng); }
 
         /* ── MOBILE DRAWER ── */
-        .mobile-overlay {
-          position: fixed; inset: 0; z-index: 1100;
-          background: rgba(0,0,0,.6); backdrop-filter: blur(3px);
-        }
-        .mobile-drawer {
-          position: fixed; top: 0; right: 0; bottom: 0;
-          width: min(320px, 85vw); z-index: 1200;
-          background: #0d0d0d; border-left: 1px solid rgba(57,255,20,.15);
-          display: flex; flex-direction: column; gap: 0;
-          transform: translateX(100%);
-          transition: transform .38s cubic-bezier(.22,1,.36,1);
-          box-shadow: -20px 0 60px rgba(0,0,0,.5);
-          overflow-y: auto;
-        }
+        .mobile-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
+        .mobile-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(320px,85vw); z-index: 1200; background: #0d0d0d; border-left: 1px solid rgba(57,255,20,.15); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .38s cubic-bezier(.22,1,.36,1); box-shadow: -20px 0 60px rgba(0,0,0,.5); overflow-y: auto; }
         .drawer-open { transform: translateX(0) !important; }
-
-        .drawer-header {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
-        }
+        .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
         .drawer-logo { height: 36px; width: auto; object-fit: contain; filter: drop-shadow(0 0 6px rgba(57,255,20,.35)); }
-        .drawer-close {
-          width: 34px; height: 34px; border-radius: 9px;
-          background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; color: #888; transition: all .25s;
-        }
+        .drawer-close { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #888; transition: all .25s; }
         .drawer-close:hover { border-color: #ff3b3b; color: #ff3b3b; }
-
-        .drawer-nav {
-          display: flex; flex-direction: column; padding: 12px 12px 0;
-        }
-        .drawer-link {
-          display: flex; align-items: center; gap: 12px;
-          padding: 13px 14px; border-radius: 11px;
-          color: #ccc; font-size: 15px; font-weight: 600;
-          text-decoration: none; transition: all .2s;
-          border: 1px solid transparent;
-        }
-        .drawer-link:hover, .drawer-link:active {
-          background: var(--ng-soft); border-color: rgba(57,255,20,.2); color: var(--ng);
-        }
+        .drawer-nav { display: flex; flex-direction: column; padding: 12px 12px 0; }
+        .drawer-link { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 11px; color: #ccc; font-size: 15px; font-weight: 600; text-decoration: none; transition: all .2s; border: 1px solid transparent; }
+        .drawer-link:hover { background: var(--ng-soft); border-color: rgba(57,255,20,.2); color: var(--ng); }
         .drawer-link svg { color: var(--ng); flex-shrink: 0; }
-
         .drawer-divider { height: 1px; background: rgba(255,255,255,.06); margin: 12px 0; }
-
         .drawer-auth { display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
-        .drawer-user {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 14px; border-radius: 11px;
-          background: rgba(57,255,20,.06); border: 1px solid rgba(57,255,20,.15);
-          margin-bottom: 4px;
-        }
-        .drawer-avatar {
-          width: 32px; height: 32px; border-radius: 8px;
-          background: var(--ng-soft); display: flex; align-items: center;
-          justify-content: center; color: var(--ng); flex-shrink: 0;
-        }
+        .drawer-user { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 11px; background: rgba(57,255,20,.06); border: 1px solid rgba(57,255,20,.15); margin-bottom: 4px; }
+        .drawer-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--ng-soft); display: flex; align-items: center; justify-content: center; color: var(--ng); flex-shrink: 0; }
         .drawer-user span { font-size: 14px; font-weight: 600; color: #ddd; }
-
-        .drawer-btn {
-          display: flex; align-items: center; justify-content: center; gap: 8px;
-          padding: 12px 16px; border-radius: 11px;
-          font-size: 14px; font-weight: 700; text-decoration: none;
-          cursor: pointer; border: none; transition: all .25s; width: 100%;
-        }
+        .drawer-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 11px; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; border: none; transition: all .25s; width: 100%; }
         .drawer-btn-primary { background: var(--ng); color: #000; }
         .drawer-btn-primary:hover { box-shadow: 0 0 20px rgba(57,255,20,.4); }
         .drawer-btn-secondary { background: rgba(57,255,20,.1); color: var(--ng); border: 1px solid rgba(57,255,20,.25); }
         .drawer-btn-ghost { background: rgba(255,255,255,.04); color: #aaa; border: 1px solid rgba(255,255,255,.1); }
         .drawer-btn-ghost:hover { border-color: rgba(57,255,20,.3); color: var(--ng); }
         .drawer-btn-danger { background: rgba(255,59,59,.08); color: #ff7070; border: 1px solid rgba(255,59,59,.2); }
-        .drawer-btn-danger:hover { background: rgba(255,59,59,.14); }
-
         .drawer-wa { padding: 12px 12px 24px; }
-        .drawer-wa-btn {
-          display: flex; align-items: center; justify-content: center; gap: 9px;
-          background: var(--wa); color: #fff; font-weight: 700;
-          padding: 14px; border-radius: 12px; text-decoration: none;
-          font-size: 14px; transition: all .3s;
-          box-shadow: 0 4px 18px rgba(37,211,102,.25);
-        }
+        .drawer-wa-btn { display: flex; align-items: center; justify-content: center; gap: 9px; background: var(--wa); color: #fff; font-weight: 700; padding: 14px; border-radius: 12px; text-decoration: none; font-size: 14px; transition: all .3s; box-shadow: 0 4px 18px rgba(37,211,102,.25); }
         .drawer-wa-btn:hover { background: var(--wa-dark); }
 
         /* ── Footer ── */
-        .footer { background: rgba(5,5,5,0.92); border-top: 1px solid rgba(57,255,20,.1); padding: 48px 0 24px; }
+        .footer { background: rgba(5,5,5,.92); border-top: 1px solid rgba(57,255,20,.1); padding: 48px 0 24px; }
         .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
         .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
         .footer-logo { margin-bottom: 16px; }
@@ -1033,7 +937,7 @@ export default function Landing() {
         .spin { width: 17px; height: 17px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: rot .7s linear infinite; display: inline-block; }
         @keyframes rot { to{transform:rotate(360deg)} }
 
-        /* ── Animated Image ── */
+        /* ── AnimatedImg ── */
         .anim-img-wrap { overflow: hidden; border-radius: var(--r); }
         .img-fallback { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(255,255,255,.04); border: 2px dashed rgba(57,255,20,.25); color: rgba(57,255,20,.5); font-size: 12px; border-radius: var(--r); }
 
@@ -1194,11 +1098,7 @@ export default function Landing() {
         .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
         .cta-img { width: 100%; max-width: 460px; height: 190px; margin: 0 auto; }
 
-        /* ════════════════════════════════════════════
-           RESPONSIVE
-        ════════════════════════════════════════════ */
-
-        /* ── TABLET ≤1024px ── */
+        /* ── RESPONSIVE ── */
         @media(max-width:1024px) {
           .hero-inner { grid-template-columns: 1fr; gap: 28px; }
           .hero-right { display: none; }
@@ -1213,8 +1113,6 @@ export default function Landing() {
           .navbar-hamburger { display: flex; }
           .navbar-links-desktop { display: none; }
         }
-
-        /* ── MOBILE ≤768px ── */
         @media(max-width:768px) {
           .snap-sec { padding: 64px 16px 28px; }
           .dots-nav { display: none; }
@@ -1259,8 +1157,6 @@ export default function Landing() {
           .sec-chip { font-size: 10px; padding: 4px 10px; }
           .navbar-logo-img { height: 36px; }
         }
-
-        /* ── SMALL ≤380px ── */
         @media(max-width:380px) {
           .prod-grid { grid-template-columns: 1fr; }
           .prod-loading { grid-template-columns: 1fr; }
