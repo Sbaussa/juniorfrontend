@@ -14,6 +14,10 @@ const INTRO_VIDEO_SRC  = "/logo.mp4";
 const HERO_VIDEO_SRC   = "/videoland.mp4";
 const SCROLL_VIDEO_SRC = "/probar.mp4";
 
+// Versiones verticales para celular
+const HERO_VIDEO_SRC_MOBILE   = "/videoland-mobile.mp4";
+const SCROLL_VIDEO_SRC_MOBILE = "/vertical.mp4";
+
 const WA_NUMBER   = "573001234567";
 const LOGO_SRC    = "/logo.png";
 const HERO_IMG    = "/taller.png";
@@ -89,7 +93,19 @@ function useAutoplay(ref) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Particles canvas
+//  Hook: detecta si es celular (≤768px)
+// ─────────────────────────────────────────────────────────────────
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", fn, { passive: true });
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return isMobile;
+}
+
+
 // ─────────────────────────────────────────────────────────────────
 function Particles({ count = 45 }) {
   const ref = useRef(null);
@@ -497,11 +513,27 @@ export default function Landing() {
   const heroSectionRef  = useRef(null);
   const containerRef    = useRef(null);
 
+  const isMobile = useMobile();
+
+  // Fuentes de video según dispositivo
+  const heroSrc   = isMobile ? HERO_VIDEO_SRC_MOBILE   : HERO_VIDEO_SRC;
+  const scrollSrc = isMobile ? SCROLL_VIDEO_SRC_MOBILE : SCROLL_VIDEO_SRC;
+
   useEffect(() => {
     try { const u = JSON.parse(localStorage.getItem("user") || "{}"); setIsAdmin(u.rol === "admin" || u.role === "admin"); } catch {}
   }, []);
 
-  // ── Autoplay robusto para los 3 videos ────────────────────────
+  // Recargar videos si cambia orientación/tamaño
+  useEffect(() => {
+    [heroVideoRef, scrollVideoRef].forEach((ref) => {
+      const el = ref.current;
+      if (!el) return;
+      el.load();
+      forcePlay(el);
+    });
+  }, [isMobile]);
+
+  // Autoplay robusto
   // iOS Safari: muted + playsinline + autoplay como atributos HTML
   // ya están en JSX. Este efecto los fuerza también como propiedades
   // DOM y llama play() en cuanto el browser tenga datos.
@@ -612,7 +644,7 @@ export default function Landing() {
         loop
         onCanPlay={() => forcePlay(scrollVideoRef.current)}
       >
-        <source src={SCROLL_VIDEO_SRC} type="video/mp4" />
+        <source src={scrollSrc} type="video/mp4" />
       </video>
       <div className="scroll-video-overlay" />
 
@@ -641,7 +673,7 @@ export default function Landing() {
             playsInline
             onCanPlay={() => forcePlay(heroVideoRef.current)}
           >
-            <source src={HERO_VIDEO_SRC} type="video/mp4" />
+            <source src={heroSrc} type="video/mp4" />
           </video>
           <div className="hero-video-overlay" />
           <Particles count={42} />
