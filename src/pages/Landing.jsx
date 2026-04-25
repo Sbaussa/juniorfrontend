@@ -12,7 +12,7 @@ import { AuthContext } from "../App";
 
 const INTRO_VIDEO_SRC  = "/logo.mp4";
 const HERO_VIDEO_SRC   = "/videoland.mp4";
-const SCROLL_VIDEO_SRC = "/videolascr.mp4";
+const SCROLL_VIDEO_SRC = "/probar.mp4";
 
 const WA_NUMBER   = "573001234567";
 const LOGO_SRC    = "/logo.png";
@@ -42,12 +42,18 @@ const CATEGORIAS = [
   { value: "otro",       label: "📦 Otro",       color: "#d97706" },
 ];
 
-// ─────────────────────────────────────────────────────────────────
-//  Helpers
-// ─────────────────────────────────────────────────────────────────
 const waProductUrl = (p) =>
   `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Me interesa: *${p.nombre}* — $${Number(p.precio).toLocaleString("es-CO")}`)}`;
 const getCat = (val) => CATEGORIAS.find((c) => c.value === val) || CATEGORIAS[4];
+
+// ─── Helper: force-play video (needed for iOS Safari) ───────────
+function tryPlay(videoRef) {
+  if (!videoRef?.current) return;
+  const v = videoRef.current;
+  v.muted = true;
+  const p = v.play();
+  if (p !== undefined) p.catch(() => {});
+}
 
 // ─────────────────────────────────────────────────────────────────
 //  Particles canvas
@@ -314,46 +320,135 @@ function ProductosSection({ isAdmin }) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  ══ NAVBAR (inline) ══
+//  ══ NAVBAR ══
 // ─────────────────────────────────────────────────────────────────
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close menu on resize to desktop
+  useEffect(() => {
+    const fn = () => { if (window.innerWidth > 768) setMobileOpen(false); };
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+
+  // Prevent body scroll when menu open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  const close = () => setMobileOpen(false);
+
   return (
-    <nav className="navbar">
-      <div className="navbar-container">
-        <Link to="/" className="navbar-logo">
-          <img src={LOGO_SRC} alt="Junior Technical Service" className="navbar-logo-img" />
-        </Link>
-        <button className="navbar-toggle" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-        <div className={`navbar-links ${mobileOpen ? "open" : ""}`}>
-          <a href="#servicios" className="nav-link" onClick={() => setMobileOpen(false)}>Servicios</a>
-          <a href="#cotizar"   className="nav-link" onClick={() => setMobileOpen(false)}>Cotizar</a>
-          <a href="#buscar"    className="nav-link" onClick={() => setMobileOpen(false)}>Buscar Reparación</a>
-          {user ? (
-            <div className="nav-auth">
-              <span className="nav-user"><User size={16} />{user.nombre}</span>
-              {user.rol === "admin" && <Link to="/admin" className="btn btn-secondary btn-sm" onClick={() => setMobileOpen(false)}><LayoutDashboard size={16} />Admin</Link>}
-              <Link to="/dashboard" className="btn btn-ghost btn-sm" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-              <button className="btn btn-ghost btn-sm" onClick={() => { logout(); navigate("/"); setMobileOpen(false); }}><LogOut size={16} />Salir</button>
+    <>
+      <nav className="navbar">
+        <div className="navbar-container">
+          <Link to="/" className="navbar-logo" onClick={close}>
+            <img src={LOGO_SRC} alt="Junior Technical Service" className="navbar-logo-img" />
+          </Link>
+
+          {/* Desktop links */}
+          <div className="navbar-links-desktop">
+            <a href="#servicios" className="nav-link">Servicios</a>
+            <a href="#cotizar"   className="nav-link">Cotizar</a>
+            <a href="#buscar"    className="nav-link">Buscar Reparación</a>
+            {user ? (
+              <div className="nav-auth">
+                <span className="nav-user"><User size={14} />{user.nombre}</span>
+                {user.rol === "admin" && <Link to="/admin" className="btn btn-secondary btn-sm"><LayoutDashboard size={14} />Admin</Link>}
+                <Link to="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
+                <button className="btn btn-ghost btn-sm" onClick={() => { logout(); navigate("/"); }}><LogOut size={14} />Salir</button>
+              </div>
+            ) : (
+              <div className="nav-auth">
+                <Link to="/login"    className="btn btn-ghost btn-sm">Ingresar</Link>
+                <Link to="/registro" className="btn btn-primary btn-sm">Registrarse</Link>
+              </div>
+            )}
+          </div>
+
+          {/* Hamburger */}
+          <button
+            className={`navbar-hamburger ${mobileOpen ? "is-open" : ""}`}
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Menú"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile drawer overlay */}
+      {mobileOpen && <div className="mobile-overlay" onClick={close} />}
+
+      {/* Mobile drawer */}
+      <div className={`mobile-drawer ${mobileOpen ? "drawer-open" : ""}`}>
+        <div className="drawer-header">
+          <img src={LOGO_SRC} alt="Logo" className="drawer-logo" />
+          <button className="drawer-close" onClick={close}><X size={20} /></button>
+        </div>
+
+        <nav className="drawer-nav">
+          <a href="#servicios" className="drawer-link" onClick={close}>
+            <Wrench size={16} /> Servicios
+          </a>
+          <a href="#cotizar" className="drawer-link" onClick={close}>
+            <Zap size={16} /> Cotizar
+          </a>
+          <a href="#tienda" className="drawer-link" onClick={close}>
+            <ShoppingBag size={16} /> Tienda
+          </a>
+          <a href="#buscar" className="drawer-link" onClick={close}>
+            <Search size={16} /> Buscar Reparación
+          </a>
+        </nav>
+
+        <div className="drawer-divider" />
+
+        {user ? (
+          <div className="drawer-auth">
+            <div className="drawer-user">
+              <div className="drawer-avatar"><User size={18} /></div>
+              <span>{user.nombre}</span>
             </div>
-          ) : (
-            <div className="nav-auth">
-              <Link to="/login"    className="btn btn-ghost btn-sm"   onClick={() => setMobileOpen(false)}>Ingresar</Link>
-              <Link to="/registro" className="btn btn-primary btn-sm" onClick={() => setMobileOpen(false)}>Registrarse</Link>
-            </div>
-          )}
+            {user.rol === "admin" && (
+              <Link to="/admin" className="drawer-btn drawer-btn-secondary" onClick={close}>
+                <LayoutDashboard size={15} /> Panel Admin
+              </Link>
+            )}
+            <Link to="/dashboard" className="drawer-btn drawer-btn-ghost" onClick={close}>
+              Dashboard
+            </Link>
+            <button className="drawer-btn drawer-btn-danger" onClick={() => { logout(); navigate("/"); close(); }}>
+              <LogOut size={15} /> Cerrar Sesión
+            </button>
+          </div>
+        ) : (
+          <div className="drawer-auth">
+            <Link to="/login" className="drawer-btn drawer-btn-ghost" onClick={close}>
+              Ingresar
+            </Link>
+            <Link to="/registro" className="drawer-btn drawer-btn-primary" onClick={close}>
+              <Zap size={15} /> Crear Cuenta Gratis
+            </Link>
+          </div>
+        )}
+
+        <div className="drawer-wa">
+          <a href={WA_URL} target="_blank" rel="noreferrer" className="drawer-wa-btn">
+            <WaIcon size={18} /> Contactar por WhatsApp
+          </a>
         </div>
       </div>
-    </nav>
+    </>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  ══ FOOTER (inline) ══
+//  ══ FOOTER ══
 // ─────────────────────────────────────────────────────────────────
 function Footer() {
   return (
@@ -400,7 +495,7 @@ function Footer() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  ══ LANDING (main export) ══
+//  ══ LANDING ══
 // ─────────────────────────────────────────────────────────────────
 export default function Landing() {
   const [searchCode, setSearchCode]     = useState("");
@@ -410,50 +505,57 @@ export default function Landing() {
   const [currentSection, setCurrentSection] = useState(0);
   const [isAdmin, setIsAdmin]           = useState(false);
 
-  // Intro video state
   const [introDone, setIntroDone]   = useState(false);
   const [introFading, setIntroFading] = useState(false);
   const introVideoRef               = useRef(null);
-
-  // Video state
-  const [heroPast, setHeroPast]     = useState(false);
   const scrollVideoRef              = useRef(null);
+  const heroVideoRef                = useRef(null);
   const heroSectionRef              = useRef(null);
-
-  const containerRef = useRef(null);
+  const containerRef                = useRef(null);
 
   useEffect(() => {
     try { const u = JSON.parse(localStorage.getItem("user") || "{}"); setIsAdmin(u.rol === "admin" || u.role === "admin"); } catch {}
   }, []);
 
-  // ── Intro video: fade out cuando termina ────────────────────────
+  // ── MOBILE VIDEO AUTOPLAY FIX ────────────────────────────────
+  // iOS Safari requires a user gesture OR that you call .play() inside
+  // a touchstart/click event. We attach a one-time listener on the
+  // document so the very first touch triggers all videos.
+  useEffect(() => {
+    let unlocked = false;
+    const unlock = () => {
+      if (unlocked) return;
+      unlocked = true;
+      tryPlay(introVideoRef);
+      tryPlay(heroVideoRef);
+      tryPlay(scrollVideoRef);
+    };
+    document.addEventListener("touchstart", unlock, { once: true, passive: true });
+    document.addEventListener("click",      unlock, { once: true });
+    return () => {
+      document.removeEventListener("touchstart", unlock);
+      document.removeEventListener("click",      unlock);
+    };
+  }, []);
+
+  // ── Intro video: fade out when ended ────────────────────────
   const handleIntroEnd = () => {
     setIntroFading(true);
-    setTimeout(() => setIntroDone(true), 700); // espera que termine el fade
+    setTimeout(() => setIntroDone(true), 700);
   };
 
-  // Fallback: si el video no carga en 6s, skip intro
+  // Fallback: skip intro after 6s if video doesn't load
   useEffect(() => {
     const t = setTimeout(handleIntroEnd, 6000);
     return () => clearTimeout(t);
   }, []);
 
-  // ── IntersectionObserver: detect when hero leaves viewport ──────
+  // ── Background video: always playing ────────────────────────
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([entry]) => setHeroPast(!entry.isIntersecting),
-      { threshold: 0.15 }
-    );
-    if (heroSectionRef.current) obs.observe(heroSectionRef.current);
-    return () => obs.disconnect();
+    tryPlay(scrollVideoRef);
   }, []);
 
-  // ── Video 2: siempre corriendo desde el inicio ───────────────────
-  useEffect(() => {
-    scrollVideoRef.current?.play().catch(() => {});
-  }, []);
-
-  // ── Dot nav: track current section ─────────────────────────────
+  // ── Dot nav ─────────────────────────────────────────────────
   useEffect(() => {
     const el = containerRef.current; if (!el) return;
     const fn = () => { el.querySelectorAll(".snap-sec").forEach((s, i) => { const r = s.getBoundingClientRect(); if (r.top >= -80 && r.top < window.innerHeight * 0.5) setCurrentSection(i); }); };
@@ -490,7 +592,7 @@ export default function Landing() {
   return (
     <div className="lnd-root">
 
-      {/* ── INTRO VIDEO — pantalla completa, limpia, sale primero ── */}
+      {/* ── INTRO VIDEO ── */}
       {!introDone && (
         <div className="intro-overlay" style={{ opacity: introFading ? 0 : 1 }}>
           <video
@@ -508,10 +610,11 @@ export default function Landing() {
 
       <Navbar />
 
-      {/* ── VIDEO 2: fondo fijo, siempre en bucle ── */}
+      {/* ── SCROLL BG VIDEO ── */}
       <video
         ref={scrollVideoRef}
         className="scroll-video-bg"
+        autoPlay
         muted
         playsInline
         loop
@@ -536,13 +639,17 @@ export default function Landing() {
 
         {/* ── S1 HERO ── */}
         <section className="snap-sec hero-sec" ref={(el) => { sRefs[0].current = el; heroSectionRef.current = el; }} id="hero">
-          {/* VIDEO 1: hero autoplay en bucle */}
-          <video className="hero-video-bg" autoPlay loop muted playsInline>
+          <video
+            ref={heroVideoRef}
+            className="hero-video-bg"
+            autoPlay
+            loop
+            muted
+            playsInline
+          >
             <source src={HERO_VIDEO_SRC} type="video/mp4" />
           </video>
-          {/* Overlay encima del hero video */}
           <div className="hero-video-overlay" />
-
           <Particles count={42} />
           <div className="hero-mesh" />
 
@@ -698,7 +805,7 @@ export default function Landing() {
           <Footer />
         </div>
 
-      </div>{/* fin scroll-wrap */}
+      </div>
 
       <style>{`
         :root {
@@ -712,21 +819,11 @@ export default function Landing() {
 
         /* ── INTRO OVERLAY ── */
         .intro-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 99999;
-          background: #000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: opacity .7s ease;
-          pointer-events: all;
+          position: fixed; inset: 0; z-index: 99999;
+          background: #000; display: flex; align-items: center; justify-content: center;
+          transition: opacity .7s ease; pointer-events: all;
         }
-        .intro-video {
-          width: 100vw;
-          height: 100vh;
-          object-fit: cover;
-        }
+        .intro-video { width: 100vw; height: 100vh; object-fit: cover; }
 
         /* ── Shell ── */
         .lnd-root { background: #080808; }
@@ -737,69 +834,153 @@ export default function Landing() {
         .sec-inner.vis { opacity: 1; transform: none; }
         .footer-wrap { scroll-snap-align: start; width: 100%; }
 
-        /* ── VIDEO 2: scroll-driven fixed background ── */
-        .scroll-video-bg {
-          position: fixed;
-          top: 0; left: 0;
-          width: 100vw; height: 100vh;
-          object-fit: cover;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .scroll-video-overlay {
-          position: fixed;
-          top: 0; left: 0;
-          width: 100vw; height: 100vh;
-          background: rgba(0, 0, 0, 0.62);
-          z-index: 0;
-          pointer-events: none;
-        }
+        /* ── Scroll BG video ── */
+        .scroll-video-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; pointer-events: none; }
+        .scroll-video-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.62); z-index: 0; pointer-events: none; }
 
-        /* ── VIDEO 1: hero section background ── */
-        .hero-video-bg {
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          object-fit: cover;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .hero-video-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.65) 100%);
-          z-index: 1;
-          pointer-events: none;
-        }
+        /* ── Hero video ── */
+        .hero-video-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }
+        .hero-video-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,.45) 0%, rgba(0,0,0,.2) 50%, rgba(0,0,0,.65) 100%); z-index: 1; pointer-events: none; }
 
-        /* Sections after hero: semi-transparent so scroll video shows through */
         .srv-sec     { background: rgba(5,5,5,0.80); }
         .proc-sec    { background: rgba(10,10,10,0.78); }
         .cot-sec     { background: rgba(5,5,5,0.80); }
         .productos-sec { background: rgba(8,8,8,0.82); }
         .buscar-sec  { background: rgba(5,5,5,0.80); }
         .cta-sec     { background: rgba(8,8,8,0.75); }
+        .hero-sec    { background: transparent; }
 
-        /* Hero needs transparent bg (video handles it) */
-        .hero-sec { background: transparent; }
-
-        /* ── Navbar ── */
-        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(8,8,8,0.88); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(57,255,20,.1); }
-        .navbar-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 70px; display: flex; align-items: center; justify-content: space-between; }
+        /* ════════════════════════════════════════════
+           NAVBAR
+        ════════════════════════════════════════════ */
+        .navbar {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+          background: rgba(8,8,8,0.92); backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(57,255,20,.1);
+        }
+        .navbar-container {
+          max-width: 1200px; margin: 0 auto; padding: 0 24px;
+          height: 64px; display: flex; align-items: center; justify-content: space-between;
+        }
         .navbar-logo { display: flex; align-items: center; text-decoration: none; }
-        .navbar-logo-img { height: 100px; width: auto; object-fit: contain; filter: drop-shadow(0 0 8px rgba(57,255,20,.4)); }
-        .navbar-toggle { display: none; background: none; border: none; color: var(--ng); cursor: pointer; }
-        .navbar-links { display: flex; align-items: center; gap: 8px; }
-        .nav-link { color: var(--text-secondary,#aaa); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: var(--r); transition: all .25s; }
+        .navbar-logo-img { height: 44px; width: auto; object-fit: contain; filter: drop-shadow(0 0 8px rgba(57,255,20,.4)); }
+
+        /* Desktop links */
+        .navbar-links-desktop { display: flex; align-items: center; gap: 4px; }
+        .nav-link { color: #aaa; text-decoration: none; font-size: 14px; font-weight: 500; padding: 7px 14px; border-radius: 10px; transition: all .25s; }
         .nav-link:hover { color: var(--ng); background: var(--ng-soft); }
-        .nav-auth { display: flex; align-items: center; gap: 8px; margin-left: 16px; }
-        .nav-user { display: flex; align-items: center; gap: 6px; color: #aaa; font-size: 13px; margin-right: 8px; }
+        .nav-auth { display: flex; align-items: center; gap: 7px; margin-left: 12px; }
+        .nav-user { display: flex; align-items: center; gap: 5px; color: #aaa; font-size: 13px; margin-right: 6px; }
         .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r); font-weight: 600; cursor: pointer; text-decoration: none; transition: all .25s; border: none; }
         .btn-primary { background: var(--ng); color: #000; }
         .btn-ghost { background: transparent; color: #aaa; border: 1px solid rgba(255,255,255,.12); }
         .btn-ghost:hover { border-color: var(--ng); color: var(--ng); }
         .btn-secondary { background: rgba(57,255,20,.12); color: var(--ng); border: 1px solid rgba(57,255,20,.3); }
-        .btn-sm { padding: 8px 16px; font-size: 13px; }
+        .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+        /* ── HAMBURGER BUTTON ── */
+        .navbar-hamburger {
+          display: none;
+          flex-direction: column; justify-content: center; align-items: center;
+          gap: 5px; width: 42px; height: 42px;
+          background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+          border-radius: 10px; cursor: pointer; padding: 0;
+          transition: all .3s; flex-shrink: 0;
+        }
+        .navbar-hamburger:hover { border-color: var(--ng); background: var(--ng-soft); }
+        .navbar-hamburger span {
+          display: block; width: 20px; height: 2px;
+          background: #ddd; border-radius: 2px;
+          transition: all .35s cubic-bezier(.22,1,.36,1); transform-origin: center;
+        }
+        .navbar-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); background: var(--ng); }
+        .navbar-hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .navbar-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); background: var(--ng); }
+
+        /* ── MOBILE DRAWER ── */
+        .mobile-overlay {
+          position: fixed; inset: 0; z-index: 1100;
+          background: rgba(0,0,0,.6); backdrop-filter: blur(3px);
+        }
+        .mobile-drawer {
+          position: fixed; top: 0; right: 0; bottom: 0;
+          width: min(320px, 85vw); z-index: 1200;
+          background: #0d0d0d; border-left: 1px solid rgba(57,255,20,.15);
+          display: flex; flex-direction: column; gap: 0;
+          transform: translateX(100%);
+          transition: transform .38s cubic-bezier(.22,1,.36,1);
+          box-shadow: -20px 0 60px rgba(0,0,0,.5);
+          overflow-y: auto;
+        }
+        .drawer-open { transform: translateX(0) !important; }
+
+        .drawer-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .drawer-logo { height: 36px; width: auto; object-fit: contain; filter: drop-shadow(0 0 6px rgba(57,255,20,.35)); }
+        .drawer-close {
+          width: 34px; height: 34px; border-radius: 9px;
+          background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: #888; transition: all .25s;
+        }
+        .drawer-close:hover { border-color: #ff3b3b; color: #ff3b3b; }
+
+        .drawer-nav {
+          display: flex; flex-direction: column; padding: 12px 12px 0;
+        }
+        .drawer-link {
+          display: flex; align-items: center; gap: 12px;
+          padding: 13px 14px; border-radius: 11px;
+          color: #ccc; font-size: 15px; font-weight: 600;
+          text-decoration: none; transition: all .2s;
+          border: 1px solid transparent;
+        }
+        .drawer-link:hover, .drawer-link:active {
+          background: var(--ng-soft); border-color: rgba(57,255,20,.2); color: var(--ng);
+        }
+        .drawer-link svg { color: var(--ng); flex-shrink: 0; }
+
+        .drawer-divider { height: 1px; background: rgba(255,255,255,.06); margin: 12px 0; }
+
+        .drawer-auth { display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
+        .drawer-user {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 14px; border-radius: 11px;
+          background: rgba(57,255,20,.06); border: 1px solid rgba(57,255,20,.15);
+          margin-bottom: 4px;
+        }
+        .drawer-avatar {
+          width: 32px; height: 32px; border-radius: 8px;
+          background: var(--ng-soft); display: flex; align-items: center;
+          justify-content: center; color: var(--ng); flex-shrink: 0;
+        }
+        .drawer-user span { font-size: 14px; font-weight: 600; color: #ddd; }
+
+        .drawer-btn {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          padding: 12px 16px; border-radius: 11px;
+          font-size: 14px; font-weight: 700; text-decoration: none;
+          cursor: pointer; border: none; transition: all .25s; width: 100%;
+        }
+        .drawer-btn-primary { background: var(--ng); color: #000; }
+        .drawer-btn-primary:hover { box-shadow: 0 0 20px rgba(57,255,20,.4); }
+        .drawer-btn-secondary { background: rgba(57,255,20,.1); color: var(--ng); border: 1px solid rgba(57,255,20,.25); }
+        .drawer-btn-ghost { background: rgba(255,255,255,.04); color: #aaa; border: 1px solid rgba(255,255,255,.1); }
+        .drawer-btn-ghost:hover { border-color: rgba(57,255,20,.3); color: var(--ng); }
+        .drawer-btn-danger { background: rgba(255,59,59,.08); color: #ff7070; border: 1px solid rgba(255,59,59,.2); }
+        .drawer-btn-danger:hover { background: rgba(255,59,59,.14); }
+
+        .drawer-wa { padding: 12px 12px 24px; }
+        .drawer-wa-btn {
+          display: flex; align-items: center; justify-content: center; gap: 9px;
+          background: var(--wa); color: #fff; font-weight: 700;
+          padding: 14px; border-radius: 12px; text-decoration: none;
+          font-size: 14px; transition: all .3s;
+          box-shadow: 0 4px 18px rgba(37,211,102,.25);
+        }
+        .drawer-wa-btn:hover { background: var(--wa-dark); }
 
         /* ── Footer ── */
         .footer { background: rgba(5,5,5,0.92); border-top: 1px solid rgba(57,255,20,.1); padding: 48px 0 24px; }
@@ -1013,7 +1194,11 @@ export default function Landing() {
         .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
         .cta-img { width: 100%; max-width: 460px; height: 190px; margin: 0 auto; }
 
-        /* ══ TABLET ≤1024px ══ */
+        /* ════════════════════════════════════════════
+           RESPONSIVE
+        ════════════════════════════════════════════ */
+
+        /* ── TABLET ≤1024px ── */
         @media(max-width:1024px) {
           .hero-inner { grid-template-columns: 1fr; gap: 28px; }
           .hero-right { display: none; }
@@ -1025,53 +1210,65 @@ export default function Landing() {
           .sec-h2 { font-size: 30px; }
           .cta-h2 { font-size: 34px; }
           .footer-grid { grid-template-columns: 1fr 1fr; }
+          .navbar-hamburger { display: flex; }
+          .navbar-links-desktop { display: none; }
         }
 
-        /* ══ MOBILE ≤768px ══ */
+        /* ── MOBILE ≤768px ── */
         @media(max-width:768px) {
-          .snap-sec { padding: 68px 16px 32px; }
+          .snap-sec { padding: 64px 16px 28px; }
           .dots-nav { display: none; }
-          .wa-float { bottom: 16px; right: 16px; width: 50px; height: 50px; }
-          .sec-h2 { font-size: 24px; }
-          .hero-h1 { font-size: 28px; }
-          .cta-h2 { font-size: 26px; }
+          .wa-float { bottom: 16px; right: 16px; width: 48px; height: 48px; }
+          .sec-h2 { font-size: 22px; }
+          .sec-sub { font-size: 14px; }
+          .hero-h1 { font-size: 26px; }
+          .hero-badge { font-size: 10px; padding: 5px 11px; }
+          .hero-p { font-size: 14px; margin-bottom: 20px; }
+          .cta-h2 { font-size: 24px; }
           .hero-ctas { flex-direction: column; gap: 9px; }
           .hero-ctas > * { justify-content: center; }
-          .hero-stats { gap: 14px; }
+          .hero-stats { gap: 16px; }
           .stat-n { font-size: 20px; }
-          .srv-grid { grid-template-columns: 1fr; gap: 14px; }
+          .stat-l { font-size: 10px; }
+          .srv-grid { grid-template-columns: 1fr; gap: 12px; }
           .proc-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
           .proc-card { padding: 16px 11px; }
           .cot-row { grid-template-columns: 1fr; }
-          .cot-form { padding: 18px; }
+          .cot-form { padding: 16px; }
+          .cot-inner { gap: 20px; }
           .cot-actions { flex-direction: column; }
           .cot-actions .btn-wa-sm { justify-content: center; }
           .prod-header { flex-direction: column; }
           .prod-header .btn-primary-lg { width: 100%; justify-content: center; }
-          .prod-grid { grid-template-columns: 1fr 1fr; gap: 11px; }
-          .prod-img { height: 140px; }
-          .prod-body { padding: 11px; }
-          .buscar-box { flex-wrap: wrap; }
+          .prod-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .prod-loading { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .prod-img { height: 130px; }
+          .prod-body { padding: 10px; }
+          .prod-name { font-size: 13px; }
+          .price-val { font-size: 15px; }
+          .buscar-box { flex-wrap: wrap; padding: 10px; gap: 8px; }
+          .buscar-input { font-size: 14px; padding: 6px 2px; }
           .buscar-box .btn-primary-lg { width: 100%; justify-content: center; }
           .cta-btns { flex-direction: column; align-items: stretch; }
           .cta-btns > * { justify-content: center; }
+          .cta-sub { font-size: 14px; margin-bottom: 20px; }
           .modal-row { grid-template-columns: 1fr; }
           .modal-actions { flex-direction: column-reverse; }
-          .navbar-toggle { display: block; }
-          .navbar-links { display: none; position: absolute; top: 70px; left: 0; right: 0; background: rgba(8,8,8,.96); border-bottom: 1px solid rgba(57,255,20,.1); flex-direction: column; padding: 16px; gap: 4px; }
-          .navbar-links.open { display: flex; }
-          .nav-auth { flex-direction: column; width: 100%; }
-          .nav-auth .btn-sm { width: 100%; }
+          .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+          .sec-head { margin-bottom: 24px; }
+          .sec-chip { font-size: 10px; padding: 4px 10px; }
           .navbar-logo-img { height: 36px; }
-          .footer-grid { grid-template-columns: 1fr; gap: 28px; }
         }
 
-        /* ══ SMALL ≤380px ══ */
+        /* ── SMALL ≤380px ── */
         @media(max-width:380px) {
           .prod-grid { grid-template-columns: 1fr; }
+          .prod-loading { grid-template-columns: 1fr; }
           .proc-grid { grid-template-columns: 1fr; }
-          .hero-h1 { font-size: 24px; }
-          .cta-h2 { font-size: 22px; }
+          .hero-h1 { font-size: 22px; }
+          .cta-h2 { font-size: 20px; }
+          .hero-stats { gap: 12px; }
+          .stat-n { font-size: 18px; }
         }
       `}</style>
     </div>
