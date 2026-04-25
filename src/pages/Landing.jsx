@@ -10,9 +10,9 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { AuthContext } from "../App";
 
-const INTRO_VIDEO_SRC  = "public/logo.mp4";
-const HERO_VIDEO_SRC   = "public/videoland.mp4";
-const SCROLL_VIDEO_SRC = "public/videolascr.mp4";
+const INTRO_VIDEO_SRC  = "/logo.mp4";
+const HERO_VIDEO_SRC   = "/videoland.mp4";
+const SCROLL_VIDEO_SRC = "/videolascr.mp4";
 
 const WA_NUMBER   = "573001234567";
 const LOGO_SRC    = "/logo.png";
