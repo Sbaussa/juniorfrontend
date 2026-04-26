@@ -16,7 +16,7 @@ const SCROLL_VIDEO_SRC = "/probar.mp4";
 
 // Versiones verticales para celular
 const HERO_VIDEO_SRC_MOBILE   = "/videoland-mobile.mp4";
-const SCROLL_VIDEO_SRC_MOBILE = "/vertical.mp4";
+const SCROLL_VIDEO_SRC_MOBILE = "/verticalloop.mp4";
 
 const WA_NUMBER   = "573001234567";
 const LOGO_SRC    = "/logo.png";
