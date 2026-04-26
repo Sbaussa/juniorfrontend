@@ -29,8 +29,8 @@ export default function Footer() {
             <h4 className="footer-title">Contacto</h4>
             <ul className="footer-list">
               <li><Phone size={14} /> +57 301 7505646</li>
-              <li><Mail size={14} /> info@tallertech.com</li>
-              <li><MapPin size={14} /> Calle Principal #123</li>
+              <li><Mail size={14} /> juniortechnicalservices@gmail.com</li>
+              <li><MapPin size={14} /> Calle 50 #43 - 12  CC Parque Central L. 151-2 #123</li>
             </ul>
           </div>
 
@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>© 2026 Junior Teechos reservados.</p>
+          <p>© 2026 Baussa - Todos los derechos reservados.</p>
         </div>
       </div>
 

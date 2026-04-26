@@ -14,11 +14,11 @@ const INTRO_VIDEO_SRC  = "/logo.mp4";
 const HERO_VIDEO_SRC   = "/videoland.mp4";
 const SCROLL_VIDEO_SRC = "/probar.mp4";
 
-// Versiones verticales para celular
-const HERO_VIDEO_SRC_MOBILE   = "/videoland-mobile.mp4";
+
+const HERO_VIDEO_SRC_MOBILE   = "/vertical.mp4";
 const SCROLL_VIDEO_SRC_MOBILE = "/vertical.mp4";
 
-const WA_NUMBER   = "573001234567";
+const WA_NUMBER   = "573017505646";
 const LOGO_SRC    = "/logo.png";
 const HERO_IMG    = "/taller.png";
 const SHOP_IMG    = "/corto.png";
@@ -330,6 +330,7 @@ function ProductosSection({ isAdmin }) {
   );
 }
 
+
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -415,7 +416,7 @@ function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <div className="footer-logo"><img src={LOGO_SRC} alt="Junior Technical Service" className="footer-logo-img" /></div>
-            <p className="footer-desc">Especialistas en reparación de consolas, computadores y celulares. Servicio técnico profesional con garantía.</p>
+            <p className="footer-desc">Especialistas en reparación de consolas, computadores y celulares. Servicio técnico profesional con más de 15 años de experiencia y conocimientos.</p>
           </div>
           <div className="footer-section">
             <h4 className="footer-title">Servicios</h4>
@@ -423,15 +424,14 @@ function Footer() {
               <li><Gamepad2 size={14} /> Reparación de Consolas</li>
               <li><Cpu size={14} /> Reparación de Computadores</li>
               <li><Smartphone size={14} /> Reparación de Celulares</li>
-              <li>Diagnóstico Gratuito</li>
             </ul>
           </div>
           <div className="footer-section">
             <h4 className="footer-title">Contacto</h4>
             <ul className="footer-list">
               <li><Phone size={14} /> +57 301 7505646</li>
-              <li><Mail size={14} /> info@tallertech.com</li>
-              <li><MapPin size={14} /> Parque Central L. 151-2</li>
+              <li><Mail size={14} /> juniortechnicalservices@gmail.com</li>
+              <li><MapPin size={14} /> CC Parque Central L. 151-2 </li>
             </ul>
           </div>
           <div className="footer-section">
@@ -443,12 +443,13 @@ function Footer() {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>© 2026 Junior Technical Service · Todos los derechos reservados.</p>
+          <p>© 2026 Baussa · Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
   );
 }
+
 
 export default function Landing() {
   const [searchCode, setSearchCode]       = useState("");
@@ -535,16 +536,16 @@ export default function Landing() {
   const vVis  = sRefs.map((r) => useVisible(r));
 
   const SERVICES = [
-    { icon: <Gamepad2 size={38} />,   title: "Consolas",     sub: "PlayStation · Xbox · Nintendo", img: "/images/consola.jpg", items: ["Joystick drift","No enciende","Sobrecalentamiento","Lector de discos","HDMI roto"] },
-    { icon: <Cpu size={38} />,        title: "Computadores", sub: "Laptops y PCs escritorio",       img: "/images/pc.jpg",      items: ["Pantalla rota","Virus / Malware","Upgrade SSD/RAM","Fuente de poder","Teclado/Touchpad"] },
-    { icon: <Smartphone size={38} />, title: "Celulares",    sub: "iPhone · Samsung · Xiaomi",      img: "/images/celular.jpg", items: ["Pantalla rota","Batería dañada","Puerto de carga","Cámara","Sensor de huella"] },
+    { icon: <Gamepad2 size={38} />,   title: "Consolas",     sub: "PlayStation · Xbox · Controles", img: "/consolas.png", items: ["Joystick drift","No enciende","Sobrecalentamiento","Reballing","Cambio HDMI"] },
+    { icon: <Cpu size={38} />,        title: "Computadores", sub: "Laptops y PCs escritorio",       img: "/portatiles.png",      items: ["Pantalla rota","Arreglo bisagra","Upgrade SSD/RAM","Fuente de poder","Bios"] },
+    { icon: <Smartphone size={38} />, title: "Celulares",    sub: "iPhone · Samsung · Xiaomi · etc...",      img: "/celulares.png", items: ["Pantalla rota","Batería dañada","Puerto de carga","Cámara","Sensor de huella"] },
   ];
 
   const STEPS = [
-    { icon: <Search size={24} />, n: "01", title: "Diagnóstico", desc: "Evaluamos tu equipo 100% gratis y sin compromiso." },
-    { icon: <Wrench size={24} />, n: "02", title: "Cotización",  desc: "Presupuesto detallado en menos de 24 horas." },
-    { icon: <Shield size={24} />, n: "03", title: "Reparación",  desc: "Reparamos con garantía y repuestos originales." },
-    { icon: <Award  size={24} />, n: "04", title: "Entrega",     desc: "Tu equipo al 100% con garantía escrita." },
+    { icon: <Search size={24} />, n: "01", title: "Diagnóstico", desc: "Recibimos tu equipo y lo evaluamos" },
+    { icon: <Wrench size={24} />, n: "02", title: "Cotización",  desc: "Te damos un presupuesto detallado y sin compromiso" },
+    { icon: <Shield size={24} />, n: "03", title: "Reparación",  desc: "Reparamos después de tu aprobación" },
+    { icon: <Award  size={24} />, n: "04", title: "Entrega",     desc: "Tu equipo al 100% con garantía de hasta 3 meses" },
   ];
 
   return (
@@ -689,7 +690,7 @@ export default function Landing() {
               ))}
             </div>
             <div className="proc-bottom">
-              <AnimatedImg src="/images/proceso-taller.jpg" alt="Proceso de reparación" className="proc-img" direction="up" delay={0.2} />
+              <AnimatedImg src="/proceso.png" alt="Proceso de reparación" className="proc-img" direction="up" delay={0.2} />
             </div>
           </div>
         </section>
