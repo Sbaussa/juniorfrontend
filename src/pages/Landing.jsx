@@ -15,7 +15,7 @@ const HERO_VIDEO_SRC   = "/videoland.mp4";
 const SCROLL_VIDEO_SRC = "/probar.mp4";
 
 
-const HERO_VIDEO_SRC_MOBILE   = "/vertical.mp4";
+const HERO_VIDEO_SRC_MOBILE   = "/videoland.mp4";
 const SCROLL_VIDEO_SRC_MOBILE = "/vertical.mp4";
 
 const WA_NUMBER   = "573017505646";
