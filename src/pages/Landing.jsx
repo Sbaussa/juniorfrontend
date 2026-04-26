@@ -50,25 +50,15 @@ const waProductUrl = (p) =>
   `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Me interesa: *${p.nombre}* — $${Number(p.precio).toLocaleString("es-CO")}`)}`;
 const getCat = (val) => CATEGORIAS.find((c) => c.value === val) || CATEGORIAS[4];
 
-// ─────────────────────────────────────────────────────────────────
-//  ▶ forcePlay — solución robusta para autoplay en iOS y Android
-//  Los videos no tienen audio, así que muted siempre va true.
-// ─────────────────────────────────────────────────────────────────
 function forcePlay(el) {
   if (!el) return;
-  // 1. Forzar muted como propiedad DOM (workaround bug de React con muted)
   el.muted = true;
-  // 2. Atributos requeridos por iOS Safari
   el.setAttribute("playsinline", "");
   el.setAttribute("webkit-playsinline", "");
-  // 3. Intentar play()
   const p = el.play();
   if (p && typeof p.catch === "function") p.catch(() => {});
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  Hook para autoplay robusto en un ref de video
-// ─────────────────────────────────────────────────────────────────
 function useAutoplay(ref) {
   useEffect(() => {
     const el = ref?.current;
@@ -76,7 +66,6 @@ function useAutoplay(ref) {
 
     forcePlay(el);
 
-    // Reintentar cuando el browser tenga datos suficientes
     const onCanPlay = () => forcePlay(el);
     const onLoaded  = () => forcePlay(el);
 
@@ -92,9 +81,6 @@ function useAutoplay(ref) {
   }, []);
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  Hook: detecta si es celular (≤768px)
-// ─────────────────────────────────────────────────────────────────
 function useMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   useEffect(() => {
@@ -105,8 +91,6 @@ function useMobile() {
   return isMobile;
 }
 
-
-// ─────────────────────────────────────────────────────────────────
 function Particles({ count = 45 }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -147,10 +131,9 @@ function Particles({ count = 45 }) {
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />;
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  AnimatedImg
-// ─────────────────────────────────────────────────────────────────
-function AnimatedImg({ src, alt = "", className = "", style = {}, direction = "up", delay = 0 }) {
+// ─── AnimatedImg ───────────────────────────────────────────────
+// containFit prop: si es true, usa object-fit: contain en lugar de cover
+function AnimatedImg({ src, alt = "", className = "", style = {}, direction = "up", delay = 0, containFit = false }) {
   const ref = useRef(null);
   const [vis, setVis] = useState(false);
   const [err, setErr] = useState(false);
@@ -164,14 +147,11 @@ function AnimatedImg({ src, alt = "", className = "", style = {}, direction = "u
     <div ref={ref} className={`anim-img-wrap ${className}`} style={{ opacity: vis ? 1 : 0, transform: vis ? "none" : (t[direction] || t.up), transition: `opacity .75s ease ${delay}s, transform .75s cubic-bezier(.22,1,.36,1) ${delay}s`, ...style }}>
       {err
         ? <div className="img-fallback"><ImageOff size={28} /><span>{alt || "Imagen"}</span></div>
-        : <img src={src} alt={alt} onError={() => setErr(true)} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
+        : <img src={src} alt={alt} onError={() => setErr(true)} style={{ width: "100%", height: "100%", objectFit: containFit ? "contain" : "cover", borderRadius: "inherit" }} />}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  Typewriter
-// ─────────────────────────────────────────────────────────────────
 function Typewriter({ words }) {
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState("");
@@ -187,9 +167,6 @@ function Typewriter({ words }) {
   return <span>{text}<span className="tw-cur">|</span></span>;
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  useVisible hook
-// ─────────────────────────────────────────────────────────────────
 function useVisible(ref, thr = 0.1) {
   const [v, setV] = useState(false);
   useEffect(() => {
@@ -200,9 +177,6 @@ function useVisible(ref, thr = 0.1) {
   return v;
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  WA Icon
-// ─────────────────────────────────────────────────────────────────
 const WaIcon = ({ size = 20 }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
@@ -210,9 +184,6 @@ const WaIcon = ({ size = 20 }) => (
   </svg>
 );
 
-// ─────────────────────────────────────────────────────────────────
-//  CotizacionForm
-// ─────────────────────────────────────────────────────────────────
 function CotizacionFormCompact() {
   const [form, setForm] = useState({ nombre: "", email: "", telefono: "", tipoEquipo: "consola", marca: "", modelo: "", descripcion: "" });
   const [loading, setLoading] = useState(false);
@@ -238,9 +209,6 @@ function CotizacionFormCompact() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  ProductCard
-// ─────────────────────────────────────────────────────────────────
 function ProductCard({ producto, isAdmin, onDelete, delay = 0 }) {
   const ref = useRef(null);
   const vis = useVisible(ref, 0.08);
@@ -268,9 +236,6 @@ function ProductCard({ producto, isAdmin, onDelete, delay = 0 }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  AdminProductModal
-// ─────────────────────────────────────────────────────────────────
 function AdminProductModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({ nombre: "", descripcion: "", precio: "", categoria: "consola", destacado: false });
   const [img, setImg] = useState(null);
@@ -328,9 +293,6 @@ function AdminProductModal({ onClose, onSuccess }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  ProductosSection
-// ─────────────────────────────────────────────────────────────────
 function ProductosSection({ isAdmin }) {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -368,9 +330,6 @@ function ProductosSection({ isAdmin }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  ══ NAVBAR ══
-// ─────────────────────────────────────────────────────────────────
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -449,9 +408,6 @@ function Navbar() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  ══ FOOTER ══
-// ─────────────────────────────────────────────────────────────────
 function Footer() {
   return (
     <footer className="footer">
@@ -494,9 +450,6 @@ function Footer() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  ══ LANDING ══
-// ─────────────────────────────────────────────────────────────────
 export default function Landing() {
   const [searchCode, setSearchCode]       = useState("");
   const [searchResult, setSearchResult]   = useState(null);
@@ -515,7 +468,6 @@ export default function Landing() {
 
   const isMobile = useMobile();
 
-  // Fuentes de video según dispositivo
   const heroSrc   = isMobile ? HERO_VIDEO_SRC_MOBILE   : HERO_VIDEO_SRC;
   const scrollSrc = isMobile ? SCROLL_VIDEO_SRC_MOBILE : SCROLL_VIDEO_SRC;
 
@@ -523,7 +475,6 @@ export default function Landing() {
     try { const u = JSON.parse(localStorage.getItem("user") || "{}"); setIsAdmin(u.rol === "admin" || u.role === "admin"); } catch {}
   }, []);
 
-  // Recargar videos si cambia orientación/tamaño
   useEffect(() => {
     [heroVideoRef, scrollVideoRef].forEach((ref) => {
       const el = ref.current;
@@ -533,15 +484,10 @@ export default function Landing() {
     });
   }, [isMobile]);
 
-  // Autoplay robusto
-  // iOS Safari: muted + playsinline + autoplay como atributos HTML
-  // ya están en JSX. Este efecto los fuerza también como propiedades
-  // DOM y llama play() en cuanto el browser tenga datos.
   useAutoplay(introVideoRef);
   useAutoplay(heroVideoRef);
   useAutoplay(scrollVideoRef);
 
-  // ── Fallback primer toque (iOS bloquea si el video no inició) ──
   useEffect(() => {
     let done = false;
     const unlock = () => {
@@ -550,9 +496,7 @@ export default function Landing() {
       forcePlay(heroVideoRef.current);
       forcePlay(scrollVideoRef.current);
     };
-    // touchstart: primer toque en iOS
     document.addEventListener("touchstart", unlock, { once: true, passive: true });
-    // click: cualquier interacción
     document.addEventListener("click", unlock, { once: true });
     return () => {
       document.removeEventListener("touchstart", unlock);
@@ -560,19 +504,16 @@ export default function Landing() {
     };
   }, []);
 
-  // ── Intro: fade out cuando termina ────────────────────────────
   const handleIntroEnd = useCallback(() => {
     setIntroFading(true);
     setTimeout(() => setIntroDone(true), 700);
   }, []);
 
-  // Fallback: skip intro si el video no carga en 6s
   useEffect(() => {
     const t = setTimeout(handleIntroEnd, 6000);
     return () => clearTimeout(t);
   }, [handleIntroEnd]);
 
-  // ── Dot nav ───────────────────────────────────────────────────
   useEffect(() => {
     const el = containerRef.current; if (!el) return;
     const fn = () => { el.querySelectorAll(".snap-sec").forEach((s, i) => { const r = s.getBoundingClientRect(); if (r.top >= -80 && r.top < window.innerHeight * 0.5) setCurrentSection(i); }); };
@@ -609,15 +550,8 @@ export default function Landing() {
   return (
     <div className="lnd-root">
 
-      {/* ── INTRO VIDEO — pantalla completa limpia ── */}
       {!introDone && (
         <div className="intro-overlay" style={{ opacity: introFading ? 0 : 1 }}>
-          {/*
-            iOS Safari REQUIERE que el video tenga:
-              autoPlay + muted + playsInline  como atributos JSX
-            Android Chrome lo respeta también.
-            El hook useAutoplay() y forcePlay() aseguran la ejecución.
-          */}
           <video
             ref={introVideoRef}
             className="intro-video"
@@ -634,7 +568,6 @@ export default function Landing() {
 
       <Navbar />
 
-      {/* ── FONDO FIJO — video en bucle para todas las secciones ── */}
       <video
         ref={scrollVideoRef}
         className="scroll-video-bg"
@@ -648,12 +581,10 @@ export default function Landing() {
       </video>
       <div className="scroll-video-overlay" />
 
-      {/* WA flotante */}
       <a href={WA_URL} target="_blank" rel="noreferrer" className="wa-float" aria-label="WhatsApp">
         <WaIcon size={26} /><span className="wa-pulse" />
       </a>
 
-      {/* Dots nav */}
       <div className="dots-nav">
         {Array.from({ length: 7 }).map((_, i) => (
           <button key={i} className={`dot ${currentSection === i ? "dot-on" : ""}`} onClick={() => scrollTo(i)} aria-label={`Sección ${i + 1}`} />
@@ -695,8 +626,16 @@ export default function Landing() {
               </div>
             </div>
             <div className="hero-right">
+              {/* ── CAMBIO: imagen completa sin recorte ── */}
               <div className="hero-img-frame">
-                <AnimatedImg src={HERO_IMG} alt="Taller Junior Technical Service" className="hero-main-img" direction="right" delay={0.2} />
+                <AnimatedImg
+                  src={HERO_IMG}
+                  alt="Taller Junior Technical Service"
+                  className="hero-main-img"
+                  direction="right"
+                  delay={0.2}
+                  containFit={true}
+                />
                 <div className="hero-img-border" />
               </div>
               <div className="fc-badge fc-b1"><CheckCircle2 size={15} /> Garantía Escrita</div>
@@ -986,9 +925,15 @@ export default function Landing() {
         .stat { display: flex; flex-direction: column; }
         .stat-n { font-size: 25px; font-weight: 900; color: var(--ng); }
         .stat-l { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
-        .hero-right { position: relative; height: 440px; }
-        .hero-img-frame { width: 100%; height: 100%; border-radius: 22px; overflow: hidden; border: 2px solid rgba(57,255,20,.22); box-shadow: 0 0 50px rgba(57,255,20,.1); }
-        .hero-main-img { width: 100%; height: 100%; opacity: 0.5; }
+
+        /* ── HERO IMAGE — CAMBIOS PRINCIPALES ── */
+        /* El contenedor ya no tiene altura fija: se adapta a la imagen */
+        .hero-right { position: relative; }
+        /* Frame sin altura fija, muestra la imagen completa */
+        .hero-img-frame { width: 100%; border-radius: 22px; overflow: hidden; border: 2px solid rgba(57,255,20,.22); box-shadow: 0 0 50px rgba(57,255,20,.1); background: rgba(0,0,0,.25); }
+        /* La imagen ocupa el ancho completo y su altura es automática (sin recorte) */
+        .hero-main-img { width: 100%; height: auto !important; }
+        .hero-main-img img { object-fit: contain !important; width: 100% !important; height: auto !important; opacity: 1 !important; }
         .hero-img-border { position: absolute; inset: -5px; border-radius: 26px; border: 1px solid rgba(57,255,20,.1); pointer-events: none; }
         .fc-badge { position: absolute; background: rgba(10,10,10,.85); border: 1px solid rgba(57,255,20,.38); border-radius: 10px; padding: 9px 13px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ng); white-space: nowrap; animation: flt 3s ease-in-out infinite; box-shadow: 0 3px 14px rgba(57,255,20,.1); backdrop-filter: blur(6px); }
         .fc-b1 { top: 16px; left: -16px; animation-delay: 0s; }
