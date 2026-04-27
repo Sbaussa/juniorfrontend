@@ -244,19 +244,19 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .ap-logo-name { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900; color: #39ff14; letter-spacing: 2.5px; line-height: 1; }
-.ap-logo-sub  { font-size: 7px; color: #2a2a2a; letter-spacing: 1.5px; margin-top: 2px; }
+.ap-logo-sub  { font-size: 7px; color: #555; letter-spacing: 1.5px; margin-top: 2px; }
 .ap-admin-badge {
   font-size: 9px; font-weight: 700; color: #39ff14;
   background: rgba(57,255,20,0.1); border: 1px solid rgba(57,255,20,0.25);
   border-radius: 5px; padding: 4px 7px; letter-spacing: 1px; white-space: nowrap;
 }
 .ap-nav { flex: 1; padding: 16px 10px; overflow-y: auto; }
-.ap-nav-section-label { font-size: 9px; color: #252525; letter-spacing: 2px; padding: 0 6px; margin-bottom: 8px; font-weight: 700; }
+.ap-nav-section-label { font-size: 9px; color: #555; letter-spacing: 2px; padding: 0 6px; margin-bottom: 8px; font-weight: 700; }
 .ap-nav-item {
   display: flex; align-items: center; gap: 10;
   width: 100%; padding: 9px 10px; border-radius: 8px;
   background: none; border: none; cursor: pointer;
-  color: #3a3a3a; margin-bottom: 2px; transition: all 0.15s; text-align: left;
+  color: #666; margin-bottom: 2px; transition: all 0.15s; text-align: left;
   font-family: 'JetBrains Mono', monospace; font-size: 12px;
 }
 .ap-nav-item:hover { background: #141414; color: #888; }
@@ -280,11 +280,11 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 }
 .ap-user-info { min-width: 0; }
 .ap-user-name  { font-size: 11px; color: #eee; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ap-user-email { font-size: 9px; color: #2a2a2a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-user-email { font-size: 9px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap-logout-btn {
   display: flex; align-items: center; gap: 8;
   width: 100%; padding: 8px 10px; background: none; border: none;
-  border-radius: 8px; cursor: pointer; color: #2a2a2a;
+  border-radius: 8px; cursor: pointer; color: #666;
   font-size: 11px; font-family: 'JetBrains Mono', monospace; transition: color 0.15s;
 }
 .ap-logout-btn:hover { color: #ff3b3b; }
@@ -329,7 +329,7 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
   transition: background 0.2s;
 }
 .ap-tab-pill.active { background: #39ff14; }
-.ap-tab-label { font-size: 9px; letter-spacing: 0.4px; font-weight: 700; color: #2e2e2e; }
+.ap-tab-label { font-size: 9px; letter-spacing: 0.4px; font-weight: 700; color: #555; }
 .ap-tab-label.active { color: #39ff14; }
 .ap-tab-btn:active .ap-tab-pill { transform: scale(0.9); }
 .ap-icon-pill:active, .ap-avatar-btn:active { opacity: 0.65; transform: scale(0.94); }
@@ -339,7 +339,7 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 @media (max-width: 767px) { .ap-view { padding: 20px 16px; } }
 
 .ap-view-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
-.ap-greet-sub  { font-size: 11px; color: #2a2a2a; margin-bottom: 4px; }
+.ap-greet-sub  { font-size: 11px; color: #666; margin-bottom: 4px; }
 .ap-page-title { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; color: #efefef; letter-spacing: 0.5px; }
 @media (max-width: 767px) { .ap-page-title { font-size: 22px; } }
 
@@ -350,20 +350,20 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
   background: #0d0d0d; border-radius: 14px; border: 1px solid #1e1e1e;
   padding: 14px 13px 11px; transition: transform 0.15s;
 }
-.ap-stat-card:hover { border-color: #2a2a2a; }
+.ap-stat-card:hover { border-color: #666; }
 @media (max-width: 767px) { .ap-stat-card:active { transform: scale(0.97); } }
 
 .ap-stat-top  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .ap-stat-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .ap-stat-num  { font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900; }
-.ap-stat-lbl  { font-size: 9px; color: #2a2a2a; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700; margin-bottom: 9px; }
+.ap-stat-lbl  { font-size: 9px; color: #666; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700; margin-bottom: 9px; }
 .ap-stat-track { height: 3px; border-radius: 2px; overflow: hidden; }
 
 .ap-section-card { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
 .ap-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.ap-section-title { font-size: 10px; color: #2a2a2a; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+.ap-section-title { font-size: 10px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
 .ap-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px 0; }
-.ap-empty-txt { font-size: 11px; color: #1e1e1e; }
+.ap-empty-txt { font-size: 11px; color: #555; }
 
 .ap-profile-row { display: flex; align-items: center; gap: 14px; }
 .ap-big-avatar {
@@ -372,7 +372,7 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
   font-size: 22px; font-weight: 900; font-family: 'Orbitron', sans-serif; flex-shrink: 0;
 }
 .ap-profile-name  { font-size: 14px; color: #efefef; font-weight: 700; margin-bottom: 3px; }
-.ap-profile-email { font-size: 11px; color: #2a2a2a; margin-bottom: 6px; }
+.ap-profile-email { font-size: 11px; color: #666; margin-bottom: 6px; }
 
 .ap-danger-row {
   display: flex; align-items: center; gap: 12;

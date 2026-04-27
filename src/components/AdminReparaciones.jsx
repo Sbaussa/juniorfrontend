@@ -165,7 +165,7 @@ function DesktopView({
 
       {/* Search */}
       <div className="ar-search-dt">
-        <Search size={14} color="#333" />
+        <Search size={14} color="#777" />
         <input
           className="ar-search-input"
           placeholder="Buscar por código, cliente, marca o modelo..."
@@ -197,7 +197,7 @@ function DesktopView({
                 <tr key={rep.id} className="ar-tr" onClick={() => { setSelected(rep); setEditMode(false); }}>
                   <td className="ar-td">
                     <span className="ar-codigo">
-                      <Hash size={9} color="#2a2a2a" style={{ marginRight: 2 }} />{rep.codigo}
+                      <Hash size={9} color="#666" style={{ marginRight: 2 }} />{rep.codigo}
                     </span>
                   </td>
                   <td className="ar-td">
@@ -280,7 +280,7 @@ function MobileView({
 
       {/* Search */}
       <div className="ar-search-mb">
-        <Search size={15} color="#333" />
+        <Search size={15} color="#777" />
         <input
           className="ar-search-input"
           placeholder="Buscar cliente, código, modelo..."
@@ -361,7 +361,7 @@ function RepCard({ rep, onView, onEdit }) {
         <div className="ar-rc-left">
           <span style={{ fontSize: 22, lineHeight: 1 }}>{TIPOS[rep.tipoEquipo] ?? "🔧"}</span>
           <div>
-            <div className="ar-rc-codigo"><Hash size={9} color="#2a2a2a" style={{ marginRight: 1 }} />{rep.codigo}</div>
+            <div className="ar-rc-codigo"><Hash size={9} color="#666" style={{ marginRight: 1 }} />{rep.codigo}</div>
             <div className="ar-rc-equipo">{rep.marca} {rep.modelo}</div>
           </div>
         </div>
@@ -484,7 +484,7 @@ function DesktopModal({ rep, editMode, onClose, onUpdateEstado, onUpdatePrecio, 
                   <span className="ar-hist-from">{h.estadoAnterior}</span>
                   <ArrowRight size={10} color="#39ff14" />
                   <Badge estado={h.estadoNuevo} />
-                  {h.notas && <span style={{ color: "#2a2a2a", fontSize: 11 }}>— {h.notas}</span>}
+                  {h.notas && <span style={{ color: "#666", fontSize: 11 }}>— {h.notas}</span>}
                   <span className="ar-hist-date">{fmtDate(h.createdAt)}</span>
                 </div>
               ))}
@@ -779,29 +779,29 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 .ar-page-dt { padding: 28px 32px; display: flex; flex-direction: column; gap: 16px; min-height: 100vh; }
 .ar-head-dt { display: flex; align-items: center; justify-content: space-between; }
 .ar-title-dt { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: #efefef; letter-spacing: 1px; }
-.ar-subtitle-dt { font-size: 11px; color: #2a2a2a; margin-top: 4px; }
+.ar-subtitle-dt { font-size: 11px; color: #666; margin-top: 4px; }
 
 .ar-chips-dt { display: flex; gap: 6px; flex-wrap: wrap; }
 .ar-search-dt { display: flex; align-items: center; gap: 10; background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 8px; padding: 0 14px; }
 
 .ar-table-wrap { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 10px; overflow: hidden; }
 .ar-table { width: 100%; border-collapse: collapse; }
-.ar-th { padding: 10px 16px; text-align: left; font-size: 9px; color: #2a2a2a; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid #1a1a1a; background: #0a0a0a; }
+.ar-th { padding: 10px 16px; text-align: left; font-size: 9px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid #1a1a1a; background: #0a0a0a; }
 .ar-tr { border-bottom: 1px solid #111; cursor: pointer; transition: background 0.1s; }
 .ar-tr:hover { background: #0f0f0f; }
 .ar-td { padding: 12px 16px; font-size: 12px; color: #888; }
 .ar-codigo { display: flex; align-items: center; font-size: 11px; color: #39ff14; font-weight: 700; letter-spacing: 0.5px; }
 .ar-cliente-cell { display: flex; flex-direction: column; gap: 2px; }
 .ar-cliente-name { font-size: 12px; color: #eee; font-weight: 600; }
-.ar-cliente-sub  { font-size: 10px; color: #2a2a2a; }
+.ar-cliente-sub  { font-size: 10px; color: #666; }
 .ar-equipo-cell  { display: flex; align-items: center; gap: 8px; }
 .ar-equipo-name  { font-size: 12px; color: #eee; }
-.ar-equipo-sub   { font-size: 10px; color: #2a2a2a; text-transform: capitalize; }
+.ar-equipo-sub   { font-size: 10px; color: #666; text-transform: capitalize; }
 .ar-precio { font-size: 12px; color: #eee; font-weight: 600; }
-.ar-fecha  { font-size: 10px; color: #2a2a2a; }
+.ar-fecha  { font-size: 10px; color: #666; }
 .ar-actions { display: flex; gap: 4px; }
 .ar-icon-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid #1e1e1e; border-radius: 6px; cursor: pointer; color: #444; transition: all 0.15s; }
-.ar-icon-btn:hover { background: #141414; color: #888; border-color: #2a2a2a; }
+.ar-icon-btn:hover { background: #141414; color: #888; border-color: #666; }
 .ar-empty-dt { display: flex; flex-direction: column; align-items: center; padding: 50px 20px; gap: 10px; }
 .ar-loading  { display: flex; justify-content: center; padding: 60px; }
 
@@ -809,7 +809,7 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 .ar-page-mb { padding: 20px 14px 0; display: flex; flex-direction: column; gap: 14px; }
 .ar-head-mb { display: flex; align-items: center; justify-content: space-between; }
 .ar-title-mb { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; color: #efefef; letter-spacing: 0.5px; }
-.ar-count-mb { font-size: 10px; color: #2a2a2a; display: block; margin-top: 3px; }
+.ar-count-mb { font-size: 10px; color: #666; display: block; margin-top: 3px; }
 .ar-fab { width: 44px; height: 44px; border-radius: 14px; background: #39ff14; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
 .ar-fab:active { transform: scale(0.92); opacity: 0.8; }
 .ar-search-mb { display: flex; align-items: center; gap: 10; background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 12px; padding: 0 14px; height: 44px; }
@@ -823,15 +823,15 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 .ar-card-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; }
 .ar-rc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .ar-rc-left { display: flex; align-items: center; gap: 10px; }
-.ar-rc-codigo { display: flex; align-items: center; font-size: 10px; color: #2a2a2a; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px; }
+.ar-rc-codigo { display: flex; align-items: center; font-size: 10px; color: #666; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px; }
 .ar-rc-equipo { font-size: 13px; color: #ddd; font-weight: 700; }
 .ar-rc-mid { padding-bottom: 10px; border-bottom: 1px solid #1a1a1a; margin-bottom: 10px; }
 .ar-rc-cliente { font-size: 12px; color: #888; margin-bottom: 2px; }
-.ar-rc-tel { font-size: 10px; color: #2a2a2a; }
+.ar-rc-tel { font-size: 10px; color: #666; }
 .ar-rc-bot { display: flex; align-items: center; justify-content: space-between; }
-.ar-rc-fecha { font-size: 10px; color: #222; }
+.ar-rc-fecha { font-size: 10px; color: #666; }
 .ar-rc-actions { display: flex; align-items: center; gap: 8px; }
-.ar-rc-precio { font-size: 12px; color: #444; font-weight: 600; }
+.ar-rc-precio { font-size: 12px; color: #888; font-weight: 600; }
 .ar-rc-edit-btn { width: 32px; height: 32px; border-radius: 9px; background: #131313; border: 1px solid #1e1e1e; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .ar-rc-edit-btn:active { transform: scale(0.9); }
 
@@ -841,54 +841,54 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 .ar-bs-handle { width: 36px; height: 4px; border-radius: 2px; background: #1e1e1e; margin: 12px auto 4px; flex-shrink: 0; }
 .ar-bs-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 12px 18px 14px; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; gap: 12px; }
 .ar-bs-codigo { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 900; color: #39ff14; letter-spacing: 0.5px; }
-.ar-bs-sub { font-size: 11px; color: #2a2a2a; margin-top: 3px; }
+.ar-bs-sub { font-size: 11px; color: #666; margin-top: 3px; }
 .ar-bs-body { overflow-y: auto; padding: 16px 18px; flex: 1; }
-.ar-bs-desc { font-size: 12px; color: #444; line-height: 1.7; }
+.ar-bs-desc { font-size: 12px; color: #777; line-height: 1.7; }
 
 /* Desktop modal overlay */
 .ar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .ar-modal-dt { background: #0e0e0e; border: 1px solid #2a2a2a; border-radius: 12px; width: 100%; max-width: 700px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
 .ar-modal-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid #1a1a1a; background: #0a0a0a; flex-shrink: 0; gap: 12px; }
 .ar-modal-codigo { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 900; color: #39ff14; letter-spacing: 1px; }
-.ar-modal-sub { font-size: 11px; color: #2a2a2a; margin-top: 3px; }
+.ar-modal-sub { font-size: 11px; color: #666; margin-top: 3px; }
 .ar-modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
 .ar-modal-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.ar-modal-desc { font-size: 12px; color: #444; line-height: 1.7; }
+.ar-modal-desc { font-size: 12px; color: #777; line-height: 1.7; }
 
 /* Shared elements */
 .ar-search-input { flex: 1; background: none; border: none; outline: none; padding: 10px 0; font-size: 13px; color: #ccc; font-family: 'JetBrains Mono', monospace; }
 .ar-clear-btn { background: none; border: none; cursor: pointer; display: flex; padding: 4px; }
-.ar-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: none; border: 1px solid #1e1e1e; color: #2a2a2a; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: 'JetBrains Mono', monospace; transition: all 0.15s; }
-.ar-chip:hover { border-color: #2a2a2a; color: #555; }
+.ar-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: none; border: 1px solid #1e1e1e; color: #666; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: 'JetBrains Mono', monospace; transition: all 0.15s; }
+.ar-chip:hover { border-color: #666; color: #555; }
 .ar-chip.active { background: rgba(57,255,20,0.1); border-color: rgba(57,255,20,0.35); color: #39ff14; }
-.ar-chip-cnt { background: #141414; border-radius: 10px; padding: 1px 6px; font-size: 10px; color: #2a2a2a; font-weight: 700; }
+.ar-chip-cnt { background: #141414; border-radius: 10px; padding: 1px 6px; font-size: 10px; color: #666; font-weight: 700; }
 .ar-chip-cnt.active { background: rgba(57,255,20,0.18); color: #39ff14; }
-.ar-empty-txt { font-size: 12px; color: #1e1e1e; }
+.ar-empty-txt { font-size: 12px; color: #555; }
 .ar-head-btn { width: 34px; height: 34px; border-radius: 9px; background: #141414; border: 1px solid #1e1e1e; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
 .ar-head-btn.on { background: #39ff14; border-color: #39ff14; }
-.ar-head-btn:hover { border-color: #2a2a2a; }
+.ar-head-btn:hover { border-color: #666; }
 .ar-edit-block { margin-bottom: 16px; }
-.ar-edit-label { font-size: 9px; color: #2a2a2a; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; }
+.ar-edit-label { font-size: 9px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; }
 .ar-input { width: 100%; padding: 10px 13px; background: #131313; border: 1px solid #1e1e1e; border-radius: 9px; color: #ddd; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none; }
 .ar-input:focus { border-color: rgba(57,255,20,0.35); box-shadow: 0 0 0 3px rgba(57,255,20,0.06); }
 .ar-textarea { min-height: 80px; resize: vertical; }
 .ar-select { padding: 10px 13px; background: #131313; border: 1px solid #1e1e1e; border-radius: 9px; color: #ddd; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none; cursor: pointer; appearance: none; }
 .ar-select:focus { border-color: rgba(57,255,20,0.35); }
 .ar-select-full { width: 100%; }
-.ar-block-title { font-size: 9px; color: #2a2a2a; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 10px; }
+.ar-block-title { font-size: 9px; color: #666; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 10px; }
 .ar-info-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #111; }
-.ar-info-label { font-size: 11px; color: #2a2a2a; }
+.ar-info-label { font-size: 11px; color: #666; }
 .ar-info-value { font-size: 12px; max-width: 60%; text-align: right; word-break: break-all; }
 .ar-hist-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; background: #0a0a0a; border-radius: 8px; margin-bottom: 6px; }
 .ar-hist-row-mb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; background: #0d0d0d; border-radius: 8px; margin-bottom: 6px; }
-.ar-hist-from { font-size: 10px; color: #2a2a2a; }
-.ar-hist-date { font-size: 10px; color: #1e1e1e; margin-left: auto; }
+.ar-hist-from { font-size: 10px; color: #666; }
+.ar-hist-date { font-size: 10px; color: #555; margin-left: auto; }
 .ar-form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ar-form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .ar-btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #39ff14; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; color: #000; font-family: 'JetBrains Mono', monospace; }
 .ar-btn-primary:hover { opacity: 0.85; }
 .ar-btn-ghost { padding: 9px 16px; background: none; border: 1px solid #1e1e1e; border-radius: 8px; color: #333; font-size: 12px; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
-.ar-btn-ghost:hover { border-color: #2a2a2a; color: #666; }
+.ar-btn-ghost:hover { border-color: #666; color: #666; }
 .ar-save-btn-sm { width: 40px; height: 40px; flex-shrink: 0; border-radius: 8px; background: #39ff14; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .ar-save-icon-btn { width: 46px; height: 46px; flex-shrink: 0; border-radius: 10px; background: #39ff14; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .ar-save-icon-btn:active { transform: scale(0.93); }
