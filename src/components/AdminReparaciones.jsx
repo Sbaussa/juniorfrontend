@@ -1,284 +1,267 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../utils/api";
 import {
-  Search, Eye, Edit3, Package, Plus, Save, X,
-  Clock, Wrench, CheckCircle, XCircle, ChevronDown,
-  ArrowRight, Hash, User, Cpu, CalendarDays,
+  Search, X, Plus, Eye, Edit3, Save, Package,
+  ArrowRight, Hash, ChevronDown, Check,
 } from "lucide-react";
 
-/* ── Constantes ── */
+/* ─────────────────────────────
+   CONSTANTES
+───────────────────────────── */
 const ESTADOS = [
-  { value: "todos",        label: "Todos",        color: null },
-  { value: "pendiente",    label: "Pendiente",    color: "#ffb800" },
-  { value: "diagnostico",  label: "Diagnóstico",  color: "#00d4ff" },
-  { value: "cotizado",     label: "Cotizado",     color: "#ce93d8" },
-  { value: "aprobado",     label: "Aprobado",     color: "#39ff14" },
-  { value: "en_reparacion",label: "En Reparación",color: "#ffb74d" },
-  { value: "reparado",     label: "Reparado",     color: "#69f0ae" },
-  { value: "entregado",    label: "Entregado",    color: "#39ff14" },
-  { value: "cancelado",    label: "Cancelado",    color: "#ff3b3b" },
+  { v: "todos",         l: "Todos",         c: null },
+  { v: "pendiente",     l: "Pendiente",     c: "#ffb800" },
+  { v: "diagnostico",   l: "Diagnóstico",   c: "#00d4ff" },
+  { v: "cotizado",      l: "Cotizado",       c: "#ce93d8" },
+  { v: "aprobado",      l: "Aprobado",       c: "#39ff14" },
+  { v: "en_reparacion", l: "En Reparación",  c: "#ff8c42" },
+  { v: "reparado",      l: "Reparado",       c: "#69f0ae" },
+  { v: "entregado",     l: "Entregado",      c: "#39ff14" },
+  { v: "cancelado",     l: "Cancelado",      c: "#ff3b3b" },
 ];
+const EMAP = Object.fromEntries(ESTADOS.filter(e => e.v !== "todos").map(e => [e.v, e]));
+const TIPOS = { consola: "🎮", computador: "💻", celular: "📱" };
 
-const ESTADO_MAP = Object.fromEntries(ESTADOS.filter(e => e.value !== "todos").map(e => [e.value, e]));
-
-const TIPO_ICONS = { consola: "🎮", computador: "💻", celular: "📱" };
-
-/* ── Colores base ── */
-const C = {
-  bg0: "#080808", bg1: "#0e0e0e", bg2: "#141414", bg3: "#1a1a1a",
-  border: "#1f1f1f", border2: "#2a2a2a",
-  green: "#39ff14", greenD: "rgba(57,255,20,0.08)", greenG: "rgba(57,255,20,0.18)",
-  txt0: "#f0f0f0", txt1: "#999", txt2: "#555",
-};
-
-/* ── Helpers ── */
-const fmtDate = (d) =>
-  new Date(d).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
-const fmtCOP = (v) => v != null
+const fmtDate = (d) => new Date(d).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
+const fmtCOP  = (v) => v != null
   ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v)
   : "—";
 
+/* ─────────────────────────────
+   BADGE
+───────────────────────────── */
 function Badge({ estado }) {
-  const cfg = ESTADO_MAP[estado];
-  if (!cfg) return null;
+  const e = EMAP[estado];
+  if (!e) return null;
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 9px", borderRadius: 20,
-      fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-      background: `${cfg.color}18`, color: cfg.color,
-      border: `1px solid ${cfg.color}30`,
+      padding: "4px 10px", borderRadius: 20,
+      fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
+      background: `${e.c}18`, color: e.c,
+      border: `1px solid ${e.c}30`,
       fontFamily: "'JetBrains Mono', monospace",
+      whiteSpace: "nowrap",
     }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
-      {cfg.label}
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: e.c, flexShrink: 0 }} />
+      {e.l}
     </span>
   );
 }
 
-/* ════════════════════════════════════════
+/* ─────────────────────────────
    COMPONENTE PRINCIPAL
-════════════════════════════════════════ */
+───────────────────────────── */
 export default function AdminReparaciones() {
-  const [reparaciones, setReparaciones] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [filtro, setFiltro]       = useState("todos");
-  const [busqueda, setBusqueda]   = useState("");
-  const [selected, setSelected]   = useState(null);
-  const [editMode, setEditMode]   = useState(false);
-  const [showNew, setShowNew]     = useState(false);
+  const [reps, setReps]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [filtro, setFiltro]     = useState("todos");
+  const [busqueda, setBusqueda] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [showNew, setShowNew]   = useState(false);
+  const chipRef = useRef(null);
 
-  useEffect(() => { loadReparaciones(); }, [filtro]);
+  useEffect(() => { load(); }, [filtro]);
 
-  const loadReparaciones = async () => {
+  const load = async () => {
     setLoading(true);
     try {
-      const params = filtro !== "todos" ? `?estado=${filtro}` : "";
-      const res = await api.get(`/api/reparaciones${params}`);
-      setReparaciones(res.data);
-    } catch (err) { console.error(err); }
+      const q = filtro !== "todos" ? `?estado=${filtro}` : "";
+      const res = await api.get(`/api/reparaciones${q}`);
+      setReps(res.data);
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  const handleUpdateEstado = async (id, nuevoEstado, notas) => {
+  const updateEstado = async (id, estado, notas) => {
     try {
-      await api.put(`/api/reparaciones/${id}/estado`, { estado: nuevoEstado, notas });
-      await loadReparaciones();
+      await api.put(`/api/reparaciones/${id}/estado`, { estado, notas });
+      await load();
       if (selected?.id === id) {
-        const updated = await api.get(`/api/reparaciones/${id}`);
-        setSelected(updated.data);
+        const r = await api.get(`/api/reparaciones/${id}`);
+        setSelected(r.data);
       }
-    } catch (err) { console.error(err); }
+    } catch (e) { console.error(e); }
   };
 
-  const handleUpdatePrecio = async (id, precio) => {
+  const updatePrecio = async (id, precio) => {
     try {
       await api.put(`/api/reparaciones/${id}`, { precio });
-      await loadReparaciones();
-    } catch (err) { console.error(err); }
+      await load();
+    } catch (e) { console.error(e); }
   };
 
-  const filtered = reparaciones.filter((r) =>
+  const counts = ESTADOS.slice(1).reduce((a, e) => {
+    a[e.v] = reps.filter(r => r.estado === e.v).length;
+    return a;
+  }, {});
+
+  const filtered = reps.filter(r =>
     [r.codigo, r.cliente, r.modelo, r.marca].some(v =>
       v?.toLowerCase().includes(busqueda.toLowerCase())
     )
   );
 
-  /* Contadores para el header */
-  const counts = ESTADOS.slice(1).reduce((acc, e) => {
-    acc[e.value] = reparaciones.filter(r => r.estado === e.value).length;
-    return acc;
-  }, {});
-
   return (
     <div style={S.page}>
-      <style>{css}</style>
+      <style>{CSS}</style>
 
       {/* ── Header ── */}
-      <div style={S.header}>
+      <div style={S.pageHead}>
         <div>
-          <h1 style={S.title}>Reparaciones</h1>
-          <p style={S.subtitle}>{reparaciones.length} registros · {filtered.length} visibles</p>
+          <h1 style={S.pageTitle}>Reparaciones</h1>
+          <span style={S.pageCount}>{filtered.length} de {reps.length}</span>
         </div>
-        <button style={S.btnPrimary} onClick={() => setShowNew(true)} className="btn-primary">
-          <Plus size={14} /> Nueva reparación
+        <button style={S.fab} onClick={() => setShowNew(true)} className="tap-scale">
+          <Plus size={18} color="#000" strokeWidth={2.5} />
         </button>
       </div>
 
-      {/* ── Chips de estado ── */}
-      <div style={S.chipRow}>
-        {ESTADOS.map((e) => {
-          const count = e.value === "todos" ? reparaciones.length : (counts[e.value] ?? 0);
-          const active = filtro === e.value;
+      {/* ── Buscador ── */}
+      <div style={S.searchBox}>
+        <Search size={15} color="#333" />
+        <input
+          style={S.searchInput}
+          placeholder="Buscar cliente, código, modelo..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
+        {busqueda && (
+          <button style={S.clearBtn} onClick={() => setBusqueda("")}>
+            <X size={13} color="#444" />
+          </button>
+        )}
+      </div>
+
+      {/* ── Chips de filtro (scroll horizontal) ── */}
+      <div style={S.chipScroll} ref={chipRef}>
+        {ESTADOS.map(e => {
+          const on = filtro === e.v;
+          const cnt = e.v === "todos" ? reps.length : (counts[e.v] ?? 0);
           return (
             <button
-              key={e.value}
-              onClick={() => setFiltro(e.value)}
+              key={e.v}
+              onClick={() => setFiltro(e.v)}
+              className="chip-btn"
               style={{
                 ...S.chip,
-                ...(active ? { ...S.chipActive, ...(e.color ? { borderColor: `${e.color}50`, color: e.color, background: `${e.color}12` } : {}) } : {}),
+                ...(on ? {
+                  background: e.c ? `${e.c}18` : "#39ff1418",
+                  borderColor: e.c ? `${e.c}50` : "#39ff1450",
+                  color: e.c ?? "#39ff14",
+                } : {}),
               }}
-              className="chip"
             >
-              {e.label}
-              <span style={{ ...S.chipCount, ...(active && e.color ? { background: `${e.color}25`, color: e.color } : {}) }}>
-                {count}
-              </span>
+              {e.l}
+              <span style={{
+                ...S.chipCnt,
+                ...(on ? { background: e.c ? `${e.c}22` : "#39ff1422", color: e.c ?? "#39ff14" } : {}),
+              }}>{cnt}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ── Search ── */}
-      <div style={S.searchWrap}>
-        <Search size={14} style={{ color: C.txt2, flexShrink: 0 }} />
-        <input
-          style={S.searchInput}
-          placeholder="Buscar por código, cliente, marca o modelo..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-        />
-        {busqueda && (
-          <button style={S.clearBtn} onClick={() => setBusqueda("")}>
-            <X size={12} />
-          </button>
-        )}
-      </div>
-
-      {/* ── Tabla ── */}
+      {/* ── Lista de cards ── */}
       {loading ? (
-        <div style={S.loadingWrap}>
-          <div className="spinner" />
+        <div style={S.loadBox}><div className="spinner" /></div>
+      ) : filtered.length === 0 ? (
+        <div style={S.emptyBox}>
+          <Package size={36} color="#1a1a1a" />
+          <span style={S.emptyTxt}>{busqueda ? `Sin resultados para "${busqueda}"` : "No hay reparaciones"}</span>
         </div>
       ) : (
-        <div style={S.tableWrap}>
-          <table style={S.table}>
-            <thead>
-              <tr>
-                {["Código", "Cliente", "Equipo", "Estado", "Precio", "Fecha", ""].map(h => (
-                  <th key={h} style={S.th}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((rep) => (
-                <tr key={rep.id} style={S.tr} className="table-row">
-                  <td style={S.td}>
-                    <span style={S.codigo}>
-                      <Hash size={10} style={{ marginRight: 2, opacity: 0.5 }} />
-                      {rep.codigo}
-                    </span>
-                  </td>
-                  <td style={S.td}>
-                    <div style={S.clienteCell}>
-                      <div style={S.clienteName}>{rep.cliente}</div>
-                      <div style={S.clienteSub}>{rep.telefono || rep.email}</div>
-                    </div>
-                  </td>
-                  <td style={S.td}>
-                    <div style={S.equipoCell}>
-                      <span style={S.tipoIcon}>{TIPO_ICONS[rep.tipoEquipo] ?? "🔧"}</span>
-                      <div>
-                        <div style={S.equipoName}>{rep.marca} {rep.modelo}</div>
-                        <div style={S.equipoSub}>{rep.tipoEquipo}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={S.td}><Badge estado={rep.estado} /></td>
-                  <td style={S.td}>
-                    <span style={S.precio}>{fmtCOP(rep.precio)}</span>
-                  </td>
-                  <td style={S.td}>
-                    <span style={S.fecha}>{fmtDate(rep.createdAt)}</span>
-                  </td>
-                  <td style={S.td}>
-                    <div style={S.acciones}>
-                      <button
-                        style={S.iconBtn}
-                        title="Ver detalle"
-                        className="icon-btn"
-                        onClick={() => { setSelected(rep); setEditMode(false); }}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      <button
-                        style={S.iconBtn}
-                        title="Editar"
-                        className="icon-btn"
-                        onClick={() => { setSelected(rep); setEditMode(true); }}
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {filtered.length === 0 && (
-            <div style={S.emptyState}>
-              <Package size={36} color={C.border2} />
-              <p style={{ color: C.txt2, fontSize: 12, marginTop: 10 }}>
-                {busqueda ? `Sin resultados para "${busqueda}"` : "No hay reparaciones aún"}
-              </p>
-            </div>
-          )}
+        <div style={S.cardList}>
+          {filtered.map(rep => (
+            <RepCard
+              key={rep.id}
+              rep={rep}
+              onView={() => { setSelected(rep); setEditMode(false); }}
+              onEdit={() => { setSelected(rep); setEditMode(true); }}
+            />
+          ))}
         </div>
       )}
 
       {/* Modales */}
       {selected && (
-        <ModalDetalle
+        <DetailSheet
           rep={selected}
           editMode={editMode}
           onClose={() => { setSelected(null); setEditMode(false); }}
-          onUpdateEstado={handleUpdateEstado}
-          onUpdatePrecio={handleUpdatePrecio}
-          onRefresh={loadReparaciones}
+          onUpdateEstado={updateEstado}
+          onUpdatePrecio={updatePrecio}
+          onRefresh={load}
+          onToggleEdit={() => setEditMode(m => !m)}
         />
       )}
       {showNew && (
-        <ModalNueva
+        <NewSheet
           onClose={() => setShowNew(false)}
-          onCreated={() => { setShowNew(false); loadReparaciones(); }}
+          onCreated={() => { setShowNew(false); load(); }}
         />
       )}
     </div>
   );
 }
 
-/* ════════════════════════════════════════
-   MODAL DETALLE / EDITAR
-════════════════════════════════════════ */
-function ModalDetalle({ rep, editMode, onClose, onUpdateEstado, onUpdatePrecio, onRefresh }) {
+/* ─────────────────────────────
+   CARD DE REPARACIÓN
+───────────────────────────── */
+function RepCard({ rep, onView, onEdit }) {
+  const tipo = TIPOS[rep.tipoEquipo] ?? "🔧";
+  return (
+    <div style={S.repCard} onClick={onView} className="rep-card">
+      {/* Fila superior */}
+      <div style={S.repCardTop}>
+        <div style={S.repCardLeft}>
+          <span style={S.tipoEmoji}>{tipo}</span>
+          <div>
+            <div style={S.repCodigo}>
+              <Hash size={9} color="#2e2e2e" style={{ marginRight: 1 }} />
+              {rep.codigo}
+            </div>
+            <div style={S.repEquipo}>{rep.marca} {rep.modelo}</div>
+          </div>
+        </div>
+        <Badge estado={rep.estado} />
+      </div>
+
+      {/* Fila media */}
+      <div style={S.repCardMid}>
+        <div style={S.repCliente}>{rep.cliente}</div>
+        <div style={S.repTelefono}>{rep.telefono || rep.email}</div>
+      </div>
+
+      {/* Fila inferior */}
+      <div style={S.repCardBot}>
+        <span style={S.repFecha}>{fmtDate(rep.createdAt)}</span>
+        <div style={S.repActions}>
+          <span style={S.repPrecio}>{fmtCOP(rep.precio)}</span>
+          <button
+            style={S.editBtn}
+            className="tap-scale"
+            onClick={e => { e.stopPropagation(); onEdit(); }}
+          >
+            <Edit3 size={13} color="#555" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────
+   BOTTOM SHEET — DETALLE / EDITAR
+───────────────────────────── */
+function DetailSheet({ rep, editMode, onClose, onUpdateEstado, onUpdatePrecio, onRefresh, onToggleEdit }) {
   const [nuevoEstado, setNuevoEstado] = useState(rep.estado);
   const [notas, setNotas]             = useState("");
   const [precio, setPrecio]           = useState(rep.precio ?? "");
   const [saving, setSaving]           = useState(false);
 
-  const handleSaveEstado = async () => {
+  const saveEstado = async () => {
     if (nuevoEstado === rep.estado) return;
     setSaving(true);
     await onUpdateEstado(rep.id, nuevoEstado, notas);
@@ -286,7 +269,7 @@ function ModalDetalle({ rep, editMode, onClose, onUpdateEstado, onUpdatePrecio, 
     onClose();
   };
 
-  const handleSavePrecio = async () => {
+  const savePrecio = async () => {
     setSaving(true);
     await onUpdatePrecio(rep.id, parseFloat(precio));
     onRefresh();
@@ -294,124 +277,124 @@ function ModalDetalle({ rep, editMode, onClose, onUpdateEstado, onUpdatePrecio, 
   };
 
   return (
-    <div style={M.overlay} onClick={onClose}>
-      <div style={M.modal} onClick={(e) => e.stopPropagation()}>
+    <div style={SH.overlay} onClick={onClose}>
+      <div style={SH.sheet} onClick={e => e.stopPropagation()}>
+        {/* Handle */}
+        <div style={SH.handle} />
 
         {/* Header */}
-        <div style={M.modalHeader}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={M.codigoTitle}>{rep.codigo}</span>
-              <Badge estado={rep.estado} />
+        <div style={SH.head}>
+          <div>
+            <div style={SH.codigo}>{rep.codigo}</div>
+            <div style={SH.equipoLine}>
+              {TIPOS[rep.tipoEquipo]} {rep.marca} {rep.modelo}
             </div>
-            <span style={{ fontSize: 11, color: C.txt2 }}>
-              {TIPO_ICONS[rep.tipoEquipo]} {rep.tipoEquipo} · {rep.marca} {rep.modelo}
-            </span>
           </div>
-          <button style={M.closeBtn} onClick={onClose} className="close-btn"><X size={16} /></button>
+          <div style={SH.headRight}>
+            <button
+              style={{ ...SH.headBtn, ...(editMode ? SH.headBtnOn : {}) }}
+              onClick={onToggleEdit}
+              className="tap-scale"
+            >
+              <Edit3 size={14} color={editMode ? "#000" : "#555"} />
+            </button>
+            <button style={SH.headBtn} onClick={onClose} className="tap-scale">
+              <X size={14} color="#555" />
+            </button>
+          </div>
         </div>
 
-        {/* Body */}
-        <div style={M.body}>
+        <Badge estado={rep.estado} />
 
-          {/* Info row */}
-          <div style={M.infoGrid}>
-            <InfoSection title="Cliente">
-              <InfoRow label="Nombre"   value={rep.cliente} />
-              <InfoRow label="Email"    value={rep.email} />
-              <InfoRow label="Teléfono" value={rep.telefono || "—"} />
-            </InfoSection>
-            <InfoSection title="Equipo">
-              <InfoRow label="Tipo"   value={`${TIPO_ICONS[rep.tipoEquipo]} ${rep.tipoEquipo}`} />
-              <InfoRow label="Marca"  value={rep.marca} />
-              <InfoRow label="Modelo" value={rep.modelo} />
-            </InfoSection>
-            <InfoSection title="Económico">
-              <InfoRow label="Precio"  value={fmtCOP(rep.precio)} highlight />
-              <InfoRow label="Ingreso" value={fmtDate(rep.createdAt)} />
-            </InfoSection>
-          </div>
+        {/* Body scrollable */}
+        <div style={SH.body}>
 
-          {/* Problema */}
-          <InfoSection title="Descripción del problema">
-            <p style={{ fontSize: 12, color: C.txt1, margin: 0, lineHeight: 1.6 }}>{rep.descripcionProblema}</p>
-          </InfoSection>
+          {/* Info rows */}
+          <Section title="Cliente">
+            <InfoRow label="Nombre"   value={rep.cliente} />
+            <InfoRow label="Email"    value={rep.email} />
+            <InfoRow label="Teléfono" value={rep.telefono || "—"} />
+          </Section>
+
+          <Section title="Servicio">
+            <InfoRow label="Precio"   value={fmtCOP(rep.precio)} green />
+            <InfoRow label="Ingreso"  value={fmtDate(rep.createdAt)} />
+          </Section>
+
+          <Section title="Problema">
+            <p style={SH.desc}>{rep.descripcionProblema}</p>
+          </Section>
 
           {rep.diagnostico && (
-            <InfoSection title="Diagnóstico">
-              <p style={{ fontSize: 12, color: C.txt1, margin: 0, lineHeight: 1.6 }}>{rep.diagnostico}</p>
-            </InfoSection>
+            <Section title="Diagnóstico">
+              <p style={SH.desc}>{rep.diagnostico}</p>
+            </Section>
           )}
 
           {/* Edición */}
           {editMode && (
-            <InfoSection title="Editar">
-              <div style={M.editBlock}>
-                <label style={M.label}>Nuevo precio (COP)</label>
-                <div style={{ display: "flex", gap: 8 }}>
+            <Section title="Editar reparación">
+              <div style={SH.editGroup}>
+                <label style={SH.editLabel}>Precio (COP)</label>
+                <div style={SH.editRow}>
                   <input
-                    style={M.input}
+                    style={SH.input}
                     type="number"
                     value={precio}
-                    onChange={(e) => setPrecio(e.target.value)}
+                    onChange={e => setPrecio(e.target.value)}
                     placeholder="0"
                   />
-                  <button style={M.btnSm} onClick={handleSavePrecio} disabled={saving} className="btn-sm">
-                    <Save size={12} /> Guardar precio
+                  <button style={SH.saveBtn} onClick={savePrecio} disabled={saving} className="tap-scale">
+                    <Save size={14} color="#000" />
                   </button>
                 </div>
               </div>
 
-              <div style={M.editBlock}>
-                <label style={M.label}>Cambiar estado</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <div style={{ position: "relative" }}>
-                    <select
-                      style={M.select}
-                      value={nuevoEstado}
-                      onChange={(e) => setNuevoEstado(e.target.value)}
-                    >
-                      {ESTADOS.filter(e => e.value !== "todos").map(e => (
-                        <option key={e.value} value={e.value}>{e.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <input
-                    style={{ ...M.input, flex: 1 }}
-                    value={notas}
-                    onChange={(e) => setNotas(e.target.value)}
-                    placeholder="Notas del cambio (opcional)"
-                  />
-                  <button
-                    style={{ ...M.btnSm, opacity: nuevoEstado === rep.estado ? 0.4 : 1 }}
-                    onClick={handleSaveEstado}
-                    disabled={saving || nuevoEstado === rep.estado}
-                    className="btn-sm"
+              <div style={SH.editGroup}>
+                <label style={SH.editLabel}>Cambiar estado</label>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <select
+                    style={SH.select}
+                    value={nuevoEstado}
+                    onChange={e => setNuevoEstado(e.target.value)}
                   >
-                    <ArrowRight size={12} /> Actualizar
-                  </button>
+                    {ESTADOS.filter(e => e.v !== "todos").map(e => (
+                      <option key={e.v} value={e.v}>{e.l}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} color="#444" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
                 </div>
+                <input
+                  style={{ ...SH.input, marginBottom: 8 }}
+                  value={notas}
+                  onChange={e => setNotas(e.target.value)}
+                  placeholder="Notas del cambio (opcional)"
+                />
+                <button
+                  style={{ ...SH.bigBtn, opacity: nuevoEstado === rep.estado || saving ? 0.4 : 1 }}
+                  onClick={saveEstado}
+                  disabled={nuevoEstado === rep.estado || saving}
+                  className="tap-scale"
+                >
+                  <ArrowRight size={15} color="#000" />
+                  Actualizar estado
+                </button>
               </div>
-            </InfoSection>
+            </Section>
           )}
 
           {/* Historial */}
           {rep.historial?.length > 0 && (
-            <InfoSection title={`Historial (${rep.historial.length})`}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {rep.historial.map((h, i) => (
-                  <div key={i} style={M.historialRow}>
-                    <span style={{ color: C.txt2, fontSize: 11 }}>{h.estadoAnterior}</span>
-                    <ArrowRight size={10} color={C.green} style={{ flexShrink: 0 }} />
-                    <Badge estado={h.estadoNuevo} />
-                    {h.notas && <span style={{ color: C.txt2, fontSize: 11, flex: 1 }}>— {h.notas}</span>}
-                    <span style={{ color: C.txt2, fontSize: 10, marginLeft: "auto", whiteSpace: "nowrap" }}>
-                      {fmtDate(h.createdAt)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </InfoSection>
+            <Section title={`Historial · ${rep.historial.length}`}>
+              {rep.historial.map((h, i) => (
+                <div key={i} style={SH.histRow}>
+                  <span style={SH.histFrom}>{h.estadoAnterior}</span>
+                  <ArrowRight size={10} color="#39ff14" />
+                  <Badge estado={h.estadoNuevo} />
+                  <span style={SH.histDate}>{fmtDate(h.createdAt)}</span>
+                </div>
+              ))}
+            </Section>
           )}
         </div>
       </div>
@@ -419,40 +402,19 @@ function ModalDetalle({ rep, editMode, onClose, onUpdateEstado, onUpdatePrecio, 
   );
 }
 
-function InfoSection({ title, children }) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 9, color: C.txt2, letterSpacing: 2, textTransform: "uppercase", marginBottom: 10, fontWeight: 700 }}>
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function InfoRow({ label, value, highlight }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: `1px solid ${C.border}` }}>
-      <span style={{ fontSize: 11, color: C.txt2 }}>{label}</span>
-      <span style={{ fontSize: 12, color: highlight ? C.green : C.txt1, fontWeight: highlight ? 700 : 400 }}>{value}</span>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════
-   MODAL NUEVA REPARACIÓN
-════════════════════════════════════════ */
-function ModalNueva({ onClose, onCreated }) {
+/* ─────────────────────────────
+   BOTTOM SHEET — NUEVA
+───────────────────────────── */
+function NewSheet({ onClose, onCreated }) {
   const [form, setForm] = useState({
     cliente: "", email: "", telefono: "",
     tipoEquipo: "consola", marca: "", modelo: "",
     descripcionProblema: "", precio: "",
   });
   const [saving, setSaving] = useState(false);
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -466,66 +428,62 @@ function ModalNueva({ onClose, onCreated }) {
   };
 
   return (
-    <div style={M.overlay} onClick={onClose}>
-      <div style={{ ...M.modal, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-        <div style={M.modalHeader}>
-          <span style={M.codigoTitle}>Nueva Reparación</span>
-          <button style={M.closeBtn} onClick={onClose} className="close-btn"><X size={16} /></button>
+    <div style={SH.overlay} onClick={onClose}>
+      <div style={{ ...SH.sheet, maxHeight: "92dvh" }} onClick={e => e.stopPropagation()}>
+        <div style={SH.handle} />
+
+        <div style={SH.head}>
+          <div style={SH.codigo}>Nueva Reparación</div>
+          <button style={SH.headBtn} onClick={onClose} className="tap-scale">
+            <X size={14} color="#555" />
+          </button>
         </div>
 
-        <div style={M.body}>
-          <form onSubmit={handleSubmit}>
-            <InfoSection title="Datos del cliente">
-              <div style={M.formRow}>
-                <FormField label="Nombre completo" required>
-                  <input style={M.input} value={form.cliente} onChange={e => set("cliente", e.target.value)} required placeholder="Ej. Juan Pérez" />
-                </FormField>
-                <FormField label="Teléfono">
-                  <input style={M.input} value={form.telefono} onChange={e => set("telefono", e.target.value)} placeholder="Ej. 300 000 0000" />
-                </FormField>
+        <div style={SH.body}>
+          <form onSubmit={submit}>
+            <Section title="Cliente">
+              <label style={SH.editLabel}>Nombre completo *</label>
+              <input style={{ ...SH.input, marginBottom: 8 }} value={form.cliente} onChange={e => set("cliente", e.target.value)} required placeholder="Ej. Juan Pérez" />
+              <label style={SH.editLabel}>Email *</label>
+              <input style={{ ...SH.input, marginBottom: 8 }} type="email" value={form.email} onChange={e => set("email", e.target.value)} required placeholder="correo@ejemplo.com" />
+              <label style={SH.editLabel}>Teléfono</label>
+              <input style={SH.input} value={form.telefono} onChange={e => set("telefono", e.target.value)} placeholder="300 000 0000" />
+            </Section>
+
+            <Section title="Equipo">
+              <label style={SH.editLabel}>Tipo</label>
+              <div style={{ position: "relative", marginBottom: 8 }}>
+                <select style={SH.select} value={form.tipoEquipo} onChange={e => set("tipoEquipo", e.target.value)}>
+                  <option value="consola">🎮 Consola</option>
+                  <option value="computador">💻 Computador</option>
+                  <option value="celular">📱 Celular</option>
+                </select>
+                <ChevronDown size={14} color="#444" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
               </div>
-              <FormField label="Correo electrónico" required>
-                <input style={M.input} type="email" value={form.email} onChange={e => set("email", e.target.value)} required placeholder="correo@ejemplo.com" />
-              </FormField>
-            </InfoSection>
+              <label style={SH.editLabel}>Marca *</label>
+              <input style={{ ...SH.input, marginBottom: 8 }} value={form.marca} onChange={e => set("marca", e.target.value)} required placeholder="Ej. Sony, Xbox, HP..." />
+              <label style={SH.editLabel}>Modelo *</label>
+              <input style={SH.input} value={form.modelo} onChange={e => set("modelo", e.target.value)} required placeholder="Ej. PS5, Series X..." />
+            </Section>
 
-            <InfoSection title="Equipo">
-              <div style={M.formRow}>
-                <FormField label="Tipo">
-                  <select style={M.select} value={form.tipoEquipo} onChange={e => set("tipoEquipo", e.target.value)}>
-                    <option value="consola">🎮 Consola</option>
-                    <option value="computador">💻 Computador</option>
-                    <option value="celular">📱 Celular</option>
-                  </select>
-                </FormField>
-                <FormField label="Marca" required>
-                  <input style={M.input} value={form.marca} onChange={e => set("marca", e.target.value)} required placeholder="Ej. Sony" />
-                </FormField>
-                <FormField label="Modelo" required>
-                  <input style={M.input} value={form.modelo} onChange={e => set("modelo", e.target.value)} required placeholder="Ej. PS5" />
-                </FormField>
-              </div>
-            </InfoSection>
+            <Section title="Problema">
+              <label style={SH.editLabel}>Descripción *</label>
+              <textarea
+                style={{ ...SH.input, minHeight: 88, resize: "none", marginBottom: 8 }}
+                value={form.descripcionProblema}
+                onChange={e => set("descripcionProblema", e.target.value)}
+                required
+                placeholder="Describe el fallo o daño del equipo..."
+              />
+              <label style={SH.editLabel}>Precio estimado (COP)</label>
+              <input style={SH.input} type="number" value={form.precio} onChange={e => set("precio", e.target.value)} placeholder="0" />
+            </Section>
 
-            <InfoSection title="Problema">
-              <FormField label="Descripción" required>
-                <textarea
-                  style={{ ...M.input, minHeight: 80, resize: "vertical" }}
-                  value={form.descripcionProblema}
-                  onChange={e => set("descripcionProblema", e.target.value)}
-                  required
-                  placeholder="Describe el problema del equipo..."
-                />
-              </FormField>
-              <FormField label="Precio estimado (COP, opcional)">
-                <input style={{ ...M.input, maxWidth: 200 }} type="number" value={form.precio} onChange={e => set("precio", e.target.value)} placeholder="0" />
-              </FormField>
-            </InfoSection>
-
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 8 }}>
-              <button type="button" style={M.btnGhost} onClick={onClose} className="btn-ghost">Cancelar</button>
-              <button type="submit" style={M.btnPrimary} disabled={saving} className="btn-primary-modal">
-                <Save size={13} /> {saving ? "Guardando..." : "Crear reparación"}
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button type="button" style={SH.ghostBtn} onClick={onClose} className="tap-scale">Cancelar</button>
+              <button type="submit" style={{ ...SH.bigBtn, flex: 1 }} disabled={saving} className="tap-scale">
+                <Check size={15} color="#000" />
+                {saving ? "Guardando..." : "Crear reparación"}
               </button>
             </div>
           </form>
@@ -535,193 +493,220 @@ function ModalNueva({ onClose, onCreated }) {
   );
 }
 
-function FormField({ label, children, required }) {
+/* ─────────────────────────────
+   SUB-COMPONENTES
+───────────────────────────── */
+function Section({ title, children }) {
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <label style={{ ...M.label, display: "block", marginBottom: 5 }}>
-        {label}{required && <span style={{ color: C.green }}>*</span>}
-      </label>
+    <div style={{ marginBottom: 20 }}>
+      <div style={SH.sectionTitle}>{title}</div>
       {children}
     </div>
   );
 }
 
-/* ════════════════════════════════════════
-   ESTILOS
-════════════════════════════════════════ */
+function InfoRow({ label, value, green }) {
+  return (
+    <div style={SH.infoRow}>
+      <span style={SH.infoLabel}>{label}</span>
+      <span style={{ ...SH.infoValue, color: green ? "#39ff14" : "#ccc", fontWeight: green ? 700 : 400 }}>{value}</span>
+    </div>
+  );
+}
+
+/* ─────────────────────────────
+   ESTILOS PÁGINA
+───────────────────────────── */
+const G  = "#39ff14";
+const BG0 = "#080808";
+const BG1 = "#0d0d0d";
+const BG2 = "#131313";
+const BR  = "#1e1e1e";
+
 const S = {
-  page: { padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16, minHeight: "100vh", background: C.bg0 },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-  title: { fontSize: 20, fontWeight: 900, color: C.txt0, margin: 0, fontFamily: "'Orbitron', sans-serif", letterSpacing: 1 },
-  subtitle: { fontSize: 11, color: C.txt2, marginTop: 4 },
-  btnPrimary: {
-    display: "flex", alignItems: "center", gap: 6,
-    padding: "9px 16px", background: C.green, color: "#000",
-    border: "none", borderRadius: 8, cursor: "pointer",
-    fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-    transition: "opacity 0.15s",
+  page: { padding: "20px 14px 0", display: "flex", flexDirection: "column", gap: 14 },
+  pageHead: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  pageTitle: { fontSize: 22, fontWeight: 900, color: "#efefef", fontFamily: "'Orbitron', sans-serif", letterSpacing: 0.5, margin: 0 },
+  pageCount: { fontSize: 10, color: "#2e2e2e", marginTop: 3, display: "block" },
+  fab: {
+    width: 44, height: 44, borderRadius: 14,
+    background: G, border: "none",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", flexShrink: 0,
   },
-  chipRow: { display: "flex", gap: 6, flexWrap: "wrap" },
-  chip: {
-    display: "flex", alignItems: "center", gap: 6,
-    padding: "5px 12px",
-    background: "none", border: `1px solid ${C.border}`,
-    borderRadius: 20, cursor: "pointer",
-    fontSize: 11, color: C.txt2,
-    fontFamily: "'JetBrains Mono', monospace",
-    transition: "all 0.15s",
-  },
-  chipActive: { background: C.greenD, borderColor: `${C.green}40`, color: C.green },
-  chipCount: {
-    background: C.bg3, borderRadius: 10,
-    padding: "1px 6px", fontSize: 10, color: C.txt2,
-  },
-  searchWrap: {
+  searchBox: {
     display: "flex", alignItems: "center", gap: 10,
-    background: C.bg1, border: `1px solid ${C.border}`,
-    borderRadius: 8, padding: "0 14px",
+    background: BG1, border: `1px solid ${BR}`,
+    borderRadius: 12, padding: "0 14px", height: 44,
   },
   searchInput: {
     flex: 1, background: "none", border: "none", outline: "none",
-    padding: "10px 0", fontSize: 12, color: C.txt0,
+    fontSize: 13, color: "#ccc", fontFamily: "'JetBrains Mono', monospace",
+  },
+  clearBtn: { background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 },
+  chipScroll: {
+    display: "flex", gap: 7,
+    overflowX: "auto", paddingBottom: 2,
+  },
+  chip: {
+    display: "flex", alignItems: "center", gap: 6,
+    padding: "6px 12px", borderRadius: 20,
+    background: "none", border: `1px solid ${BR}`,
+    color: "#333", fontSize: 11, fontWeight: 700,
+    cursor: "pointer", whiteSpace: "nowrap",
     fontFamily: "'JetBrains Mono', monospace",
-  },
-  clearBtn: { background: "none", border: "none", cursor: "pointer", color: C.txt2, display: "flex", padding: 0 },
-  tableWrap: { background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: {
-    padding: "10px 16px", textAlign: "left",
-    fontSize: 9, color: C.txt2, letterSpacing: 1.5,
-    textTransform: "uppercase", fontWeight: 700,
-    borderBottom: `1px solid ${C.border}`,
-    background: C.bg2,
-  },
-  tr: { borderBottom: `1px solid ${C.border}`, transition: "background 0.1s" },
-  td: { padding: "12px 16px", fontSize: 12, color: C.txt1 },
-  codigo: { display: "flex", alignItems: "center", fontSize: 11, color: C.green, fontWeight: 700, letterSpacing: 0.5 },
-  clienteCell: { display: "flex", flexDirection: "column", gap: 2 },
-  clienteName: { fontSize: 12, color: C.txt0, fontWeight: 600 },
-  clienteSub: { fontSize: 10, color: C.txt2 },
-  equipoCell: { display: "flex", alignItems: "center", gap: 8 },
-  tipoIcon: { fontSize: 16, lineHeight: 1 },
-  equipoName: { fontSize: 12, color: C.txt0 },
-  equipoSub: { fontSize: 10, color: C.txt2, textTransform: "capitalize" },
-  precio: { fontSize: 12, color: C.txt0, fontWeight: 600 },
-  fecha: { fontSize: 10, color: C.txt2 },
-  acciones: { display: "flex", gap: 4 },
-  iconBtn: {
-    width: 30, height: 30,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    background: "none", border: `1px solid ${C.border}`,
-    borderRadius: 6, cursor: "pointer", color: C.txt2,
     transition: "all 0.15s",
   },
-  loadingWrap: { display: "flex", justifyContent: "center", padding: 60 },
-  emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "50px 20px" },
+  chipCnt: {
+    background: "#141414", borderRadius: 10,
+    padding: "1px 6px", fontSize: 10, color: "#2a2a2a", fontWeight: 700,
+  },
+  loadBox: { display: "flex", justifyContent: "center", padding: 60 },
+  emptyBox: { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "60px 0" },
+  emptyTxt: { fontSize: 12, color: "#1e1e1e" },
+  cardList: { display: "flex", flexDirection: "column", gap: 10, paddingBottom: 16 },
+  repCard: {
+    background: BG1, borderRadius: 16, border: `1px solid ${BR}`,
+    padding: "14px 14px 11px", cursor: "pointer",
+    transition: "background 0.15s",
+  },
+  repCardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  repCardLeft: { display: "flex", alignItems: "center", gap: 10 },
+  tipoEmoji: { fontSize: 22, lineHeight: 1 },
+  repCodigo: { display: "flex", alignItems: "center", fontSize: 10, color: "#2e2e2e", fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 },
+  repEquipo: { fontSize: 13, color: "#ddd", fontWeight: 700 },
+  repCardMid: { paddingBottom: 10, borderBottom: `1px solid ${BR}`, marginBottom: 10 },
+  repCliente: { fontSize: 12, color: "#999", marginBottom: 2 },
+  repTelefono: { fontSize: 10, color: "#2e2e2e" },
+  repCardBot: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  repFecha:   { fontSize: 10, color: "#282828" },
+  repActions: { display: "flex", alignItems: "center", gap: 8 },
+  repPrecio:  { fontSize: 12, color: "#555", fontWeight: 600 },
+  editBtn: {
+    width: 32, height: 32, borderRadius: 9,
+    background: BG2, border: `1px solid ${BR}`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer",
+  },
 };
 
-const M = {
+/* ─────────────────────────────
+   ESTILOS SHEET
+───────────────────────────── */
+const SH = {
   overlay: {
     position: "fixed", inset: 0,
-    background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    zIndex: 1000, padding: 20,
+    background: "rgba(0,0,0,0.75)",
+    backdropFilter: "blur(3px)",
+    display: "flex", alignItems: "flex-end",
+    zIndex: 200,
   },
-  modal: {
-    background: C.bg1,
-    border: `1px solid ${C.border2}`,
-    borderRadius: 12,
-    width: "100%", maxWidth: 700,
-    maxHeight: "90vh",
+  sheet: {
+    width: "100%", maxWidth: 480,
+    margin: "0 auto",
+    background: "#0e0e0e",
+    borderTop: `1px solid #1e1e1e`,
+    borderRadius: "22px 22px 0 0",
+    maxHeight: "86dvh",
     display: "flex", flexDirection: "column",
-    overflow: "hidden",
+    paddingBottom: "env(safe-area-inset-bottom, 16px)",
   },
-  modalHeader: {
-    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-    padding: "20px 24px",
-    borderBottom: `1px solid ${C.border}`,
-    background: C.bg2,
+  handle: {
+    width: 36, height: 4, borderRadius: 2,
+    background: "#222", margin: "12px auto 4px",
     flexShrink: 0,
   },
-  codigoTitle: {
-    fontSize: 16, fontWeight: 900, color: C.green,
-    fontFamily: "'Orbitron', sans-serif", letterSpacing: 1,
+  head: {
+    display: "flex", alignItems: "flex-start",
+    justifyContent: "space-between",
+    padding: "12px 18px 14px",
+    borderBottom: `1px solid #1a1a1a`,
+    flexShrink: 0, gap: 12,
   },
-  closeBtn: {
-    background: "none", border: `1px solid ${C.border}`,
-    borderRadius: 6, cursor: "pointer", color: C.txt2,
-    width: 30, height: 30,
+  headRight: { display: "flex", gap: 8, flexShrink: 0 },
+  headBtn: {
+    width: 34, height: 34, borderRadius: 10,
+    background: "#141414", border: `1px solid #1e1e1e`,
     display: "flex", alignItems: "center", justifyContent: "center",
-    transition: "all 0.15s", flexShrink: 0,
+    cursor: "pointer",
   },
-  body: { padding: "20px 24px", overflowY: "auto", flex: 1 },
-  infoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 },
-  editBlock: { marginBottom: 16 },
-  label: { fontSize: 10, color: C.txt2, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6, fontWeight: 700 },
+  headBtnOn: { background: "#39ff14", borderColor: "#39ff14" },
+  codigo: { fontSize: 16, fontWeight: 900, color: "#39ff14", fontFamily: "'Orbitron', sans-serif", letterSpacing: 0.5 },
+  equipoLine: { fontSize: 11, color: "#333", marginTop: 3 },
+  body: { overflowY: "auto", padding: "16px 18px", flex: 1 },
+  sectionTitle: {
+    fontSize: 9, color: "#2a2a2a", letterSpacing: 2,
+    textTransform: "uppercase", fontWeight: 700, marginBottom: 10,
+  },
+  infoRow: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "8px 0", borderBottom: `1px solid #111`,
+  },
+  infoLabel: { fontSize: 11, color: "#2e2e2e" },
+  infoValue: { fontSize: 12, maxWidth: "60%", textAlign: "right", wordBreak: "break-all" },
+  desc: { fontSize: 12, color: "#555", lineHeight: 1.7, margin: 0 },
+  editGroup: { marginBottom: 16 },
+  editLabel: { fontSize: 10, color: "#2a2a2a", letterSpacing: 1, textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: 6 },
+  editRow: { display: "flex", gap: 8 },
   input: {
-    width: "100%", padding: "9px 12px",
-    background: C.bg2, border: `1px solid ${C.border2}`,
-    borderRadius: 6, color: C.txt0,
-    fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
-    outline: "none", boxSizing: "border-box",
+    width: "100%", padding: "12px 14px",
+    background: "#131313", border: `1px solid #1e1e1e`,
+    borderRadius: 10, color: "#ddd",
+    fontSize: 13, fontFamily: "'JetBrains Mono', monospace",
+    outline: "none",
   },
   select: {
-    padding: "9px 12px", background: C.bg2,
-    border: `1px solid ${C.border2}`, borderRadius: 6,
-    color: C.txt0, fontSize: 12,
-    fontFamily: "'JetBrains Mono', monospace",
+    width: "100%", padding: "12px 14px",
+    background: "#131313", border: `1px solid #1e1e1e`,
+    borderRadius: 10, color: "#ddd",
+    fontSize: 13, fontFamily: "'JetBrains Mono', monospace",
     outline: "none", cursor: "pointer",
-    minWidth: 140,
+    appearance: "none",
   },
-  btnSm: {
-    display: "flex", alignItems: "center", gap: 5,
-    padding: "9px 14px", background: C.green, color: "#000",
-    border: "none", borderRadius: 6, cursor: "pointer",
-    fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-    whiteSpace: "nowrap", flexShrink: 0,
+  saveBtn: {
+    width: 46, height: 46, flexShrink: 0, borderRadius: 10,
+    background: "#39ff14", border: "none",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer",
   },
-  historialRow: {
-    display: "flex", alignItems: "center", gap: 8,
-    padding: "8px 12px",
-    background: C.bg2, borderRadius: 6, fontSize: 12,
-    flexWrap: "wrap",
+  bigBtn: {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+    width: "100%", padding: "14px",
+    background: "#39ff14", border: "none", borderRadius: 12,
+    color: "#000", fontSize: 13, fontWeight: 700,
+    cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
   },
-  formRow: { display: "flex", gap: 10, marginBottom: 10 },
-  btnGhost: {
-    padding: "9px 16px", background: "none",
-    border: `1px solid ${C.border2}`, borderRadius: 8,
-    color: C.txt2, fontSize: 12, cursor: "pointer",
+  ghostBtn: {
+    padding: "14px 18px",
+    background: "none", border: `1px solid #1e1e1e`,
+    borderRadius: 12, color: "#333",
+    fontSize: 13, cursor: "pointer",
     fontFamily: "'JetBrains Mono', monospace",
   },
-  btnPrimary: {
-    display: "flex", alignItems: "center", gap: 6,
-    padding: "9px 18px", background: C.green, color: "#000",
-    border: "none", borderRadius: 8, cursor: "pointer",
-    fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+  histRow: {
+    display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8,
+    padding: "8px 10px",
+    background: "#0d0d0d", borderRadius: 8, marginBottom: 6,
   },
+  histFrom: { fontSize: 10, color: "#2a2a2a" },
+  histDate: { fontSize: 10, color: "#1e1e1e", marginLeft: "auto" },
 };
 
-const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=JetBrains+Mono:wght@400;500;700&display=swap');
-  * { box-sizing: border-box; }
-  .btn-primary:hover { opacity: 0.85; }
-  .chip:hover { border-color: #2a2a2a; color: #ccc; }
-  .table-row:hover { background: #111 !important; }
-  .icon-btn:hover { background: #1a1a1a !important; border-color: #333 !important; color: #ccc !important; }
-  .close-btn:hover { border-color: #ff3b3b; color: #ff3b3b; }
-  .btn-sm:hover { opacity: 0.85; }
-  .btn-ghost:hover { border-color: #333; color: #ccc; }
-  .btn-primary-modal:hover { opacity: 0.85; }
-  input:focus, textarea:focus, select:focus { border-color: rgba(57,255,20,0.4) !important; box-shadow: 0 0 0 2px rgba(57,255,20,0.08); }
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  .tap-scale:active { transform: scale(0.93) !important; opacity: 0.8; }
+  .rep-card:active  { background: #0f0f0f !important; }
+  .chip-btn:active  { opacity: 0.7; }
+  input:focus, textarea:focus, select:focus { border-color: rgba(57,255,20,0.35) !important; box-shadow: 0 0 0 3px rgba(57,255,20,0.06); }
   .spinner {
-    width: 24px; height: 24px;
+    width: 26px; height: 26px;
     border: 2px solid #1a1a1a;
     border-top-color: #39ff14;
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: spin 0.65s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
 `;
