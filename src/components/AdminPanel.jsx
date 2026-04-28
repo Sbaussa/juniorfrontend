@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import AdminReparaciones from "./AdminReparaciones";
 import AdminCotizaciones from "./AdminCotizaciones";
+import AdminClientes     from "./AdminClientes";
 
 const TABS = [
   { id: "dashboard",     label: "Dashboard",    shortLabel: "Inicio",   Icon: LayoutDashboard },
@@ -24,11 +25,11 @@ export default function AdminPanel() {
 
   const content = (
     <>
-      {active === "reparaciones"   && <AdminReparaciones />}
-      {active === "cotizaciones"   && <AdminCotizaciones />}
-      {active === "dashboard"      && <DashboardView user={user} />}
-      {active === "clientes"       && <Placeholder title="Clientes" Icon={Users} />}
-      {active === "configuracion"  && <ConfigView user={user} onLogout={handleLogout} />}
+      {active === "reparaciones"  && <AdminReparaciones />}
+      {active === "cotizaciones"  && <AdminCotizaciones />}
+      {active === "clientes"      && <AdminClientes />}
+      {active === "dashboard"     && <DashboardView user={user} />}
+      {active === "configuracion" && <ConfigView user={user} onLogout={handleLogout} />}
     </>
   );
 
@@ -185,19 +186,6 @@ function ConfigView({ user, onLogout }) {
   );
 }
 
-function Placeholder({ title, Icon }) {
-  return (
-    <div className="ap-view">
-      <div className="ap-view-head"><h1 className="ap-page-title">{title}</h1></div>
-      <div className="ap-empty" style={{ paddingTop: 60 }}>
-        <Icon size={36} color="#1a1a1a" />
-        <span className="ap-empty-txt">Próximamente disponible</span>
-      </div>
-    </div>
-  );
-}
-
-/* ─── CSS ─── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -251,8 +239,6 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 .ap-tab-pill.active { background: #39ff14; }
 .ap-tab-label { font-size: 9px; letter-spacing: 0.4px; font-weight: 700; color: #555; }
 .ap-tab-label.active { color: #39ff14; }
-.ap-tab-btn:active .ap-tab-pill { transform: scale(0.9); }
-.ap-icon-pill:active, .ap-avatar-btn:active { opacity: 0.65; transform: scale(0.94); }
 
 .ap-view { padding: 28px 32px; }
 @media (max-width: 767px) { .ap-view { padding: 20px 16px; } }
@@ -262,7 +248,6 @@ html, body { background: #080808; font-family: 'JetBrains Mono', monospace; }
 .ap-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 @media (max-width: 767px) { .ap-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
 .ap-stat-card { background: #0d0d0d; border-radius: 14px; border: 1px solid #1e1e1e; padding: 14px 13px 11px; }
-.ap-stat-card:hover { border-color: #2a2a2a; }
 .ap-stat-top  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .ap-stat-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .ap-stat-num  { font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900; }
